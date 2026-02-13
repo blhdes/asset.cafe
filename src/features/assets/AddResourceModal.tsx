@@ -19,39 +19,38 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
   const [title, setTitle] = useState('')
   const [fetchingTitle, setFetchingTitle] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [autoFetched, setAutoFetched] = useState(false)
 
   const hostname = extractHostname(url)
   const favicon = faviconUrl(url)
   const isValidUrl = hostname !== ''
 
-  // Auto-fetch page title via CORS proxy
+  // Auto-fetch page title whenever the URL changes
   useEffect(() => {
-    if (!isValidUrl || title || autoFetched) return
+    setTitle('')
+    setFetchingTitle(false)
+
+    if (!isValidUrl) return
 
     const controller = new AbortController()
     setFetchingTitle(true)
 
     const timer = setTimeout(async () => {
       const fetched = await fetchPageTitle(url, controller.signal)
-      if (fetched) {
-        setTitle(fetched)
-        setAutoFetched(true)
+      if (!controller.signal.aborted) {
+        if (fetched) setTitle(fetched)
+        setFetchingTitle(false)
       }
-      setFetchingTitle(false)
     }, 600)
 
     return () => {
       clearTimeout(timer)
       controller.abort()
-      setFetchingTitle(false)
     }
-  }, [url, isValidUrl, title, autoFetched])
+  }, [url])
 
   const reset = () => {
     setUrl('')
     setTitle('')
-    setAutoFetched(false)
     setFetchingTitle(false)
   }
 
@@ -93,7 +92,7 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
           <input
             type="url"
             value={url}
-            onChange={e => { setUrl(e.target.value); setAutoFetched(false) }}
+            onChange={e => setUrl(e.target.value)}
             placeholder="https://..."
             autoFocus
             className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"

@@ -26,39 +26,38 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
   const [resUrl, setResUrl] = useState('')
   const [resTitle, setResTitle] = useState('')
   const [fetchingTitle, setFetchingTitle] = useState(false)
-  const [autoFetched, setAutoFetched] = useState(false)
 
   const hostname = extractHostname(resUrl)
   const isValidUrl = hostname !== ''
   const favicon = faviconUrl(resUrl)
 
-  // Auto-fetch page title when URL is valid
+  // Auto-fetch page title whenever the URL changes
   useEffect(() => {
-    if (!isValidUrl || resTitle || autoFetched) return
+    setResTitle('')
+    setFetchingTitle(false)
+
+    if (!isValidUrl) return
 
     const controller = new AbortController()
     setFetchingTitle(true)
 
     const timer = setTimeout(async () => {
       const title = await fetchPageTitle(resUrl, controller.signal)
-      if (title) {
-        setResTitle(title)
-        setAutoFetched(true)
+      if (!controller.signal.aborted) {
+        if (title) setResTitle(title)
+        setFetchingTitle(false)
       }
-      setFetchingTitle(false)
     }, 600)
 
     return () => {
       clearTimeout(timer)
       controller.abort()
-      setFetchingTitle(false)
     }
-  }, [resUrl, isValidUrl, resTitle, autoFetched])
+  }, [resUrl])
 
   const resetResourceInputs = () => {
     setResUrl('')
     setResTitle('')
-    setAutoFetched(false)
     setFetchingTitle(false)
   }
 
@@ -228,7 +227,7 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
           <input
             type="url"
             value={resUrl}
-            onChange={e => { setResUrl(e.target.value); setAutoFetched(false) }}
+            onChange={e => setResUrl(e.target.value)}
             placeholder="https://..."
             className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
           />
