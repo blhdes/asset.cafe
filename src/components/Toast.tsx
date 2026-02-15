@@ -22,23 +22,37 @@ export default function ToastContainer() {
     setToasts(prev => [...prev, { id, text, type }])
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id))
-    }, 4000)
+    }, 3200)
   }, [])
 
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 right-4 z-50 space-y-2" style={{ maxWidth: '360px' }}>
       {toasts.map(t => (
         <div
           key={t.id}
-          className={`px-4 py-3 rounded-lg text-sm shadow-lg border animate-slide-in ${
-            t.type === 'error'
-              ? 'bg-red-950 border-red-800 text-red-200'
-              : 'bg-emerald-950 border-emerald-800 text-emerald-200'
-          }`}
+          className="animate-toast-in relative overflow-hidden"
+          style={{
+            padding: '12px 16px 16px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.875rem',
+            boxShadow: '0 4px 24px -4px rgba(0,0,0,0.4)',
+            backgroundColor: t.type === 'error' ? 'var(--error-bg)' : 'var(--success-bg)',
+            border: `1px solid ${t.type === 'error' ? 'var(--error-border)' : 'var(--success-border)'}`,
+            color: t.type === 'error' ? 'var(--error)' : 'var(--success)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         >
           {t.text}
+          <div
+            className="absolute bottom-0 left-0 h-[2px] animate-toast-progress"
+            style={{
+              backgroundColor: t.type === 'error' ? 'var(--error)' : 'var(--success)',
+              opacity: 0.5,
+            }}
+          />
         </div>
       ))}
     </div>

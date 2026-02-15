@@ -75,12 +75,12 @@ export default function AssetListView({ list, db, onBack }: Props) {
 
   /* ── Render ────────────────────────────────────────────── */
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+          className="btn-ghost flex items-center gap-1"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
@@ -88,14 +88,23 @@ export default function AssetListView({ list, db, onBack }: Props) {
           Back
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-white truncate">{list.name}</h2>
-          <p className="text-xs text-zinc-500">
+          <h2
+            className="truncate"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.25rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            {list.name}
+          </h2>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             {assets.length} {assets.length === 1 ? 'asset' : 'assets'}
           </p>
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="shrink-0 rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+          className="btn-primary shrink-0"
         >
           + Add Asset
         </button>
@@ -107,16 +116,20 @@ export default function AssetListView({ list, db, onBack }: Props) {
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Search by name or ticker..."
-        className="w-full sm:w-72 rounded bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+        className="input-field sm:max-w-[288px]"
       />
 
       {/* Tag pills */}
       {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div
+          className="flex flex-nowrap gap-2 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: 'none' }}
+        >
           {activeTag && (
             <button
               onClick={() => setActiveTag(null)}
-              className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 transition-colors hover:text-white"
+              className="tag-pill btn-ghost"
+              style={{ borderRadius: 'var(--radius-pill)' }}
             >
               Clear
             </button>
@@ -125,10 +138,10 @@ export default function AssetListView({ list, db, onBack }: Props) {
             <button
               key={tag}
               onClick={() => setActiveTag(prev => (prev === tag ? null : tag))}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
+              className={`tag-pill ${
                 activeTag === tag
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  ? 'tag-pill-active'
+                  : 'tag-pill-default'
               }`}
             >
               {tag}
@@ -148,8 +161,31 @@ export default function AssetListView({ list, db, onBack }: Props) {
 
       {/* Empty state */}
       {!loading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 py-16 text-center">
-          <p className="text-zinc-400 text-sm">
+        <div
+          className="flex flex-col items-center py-20 text-center"
+          style={{
+            border: '1px dashed var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="mb-3"
+            width={24}
+            height={24}
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+            />
+          </svg>
+          <p style={{ color: 'var(--text-tertiary)' }} className="text-sm">
             {assets.length === 0
               ? 'No assets in this list yet.'
               : 'No assets match your search.'}
@@ -157,7 +193,7 @@ export default function AssetListView({ list, db, onBack }: Props) {
           {assets.length === 0 && (
             <button
               onClick={() => setModalOpen(true)}
-              className="mt-4 rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+              className="btn-primary mt-4"
             >
               + Add Asset
             </button>

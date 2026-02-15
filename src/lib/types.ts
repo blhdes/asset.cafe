@@ -24,5 +24,7 @@ export interface Asset {
   description: string
   tags: string[]
   resources: Resource[]
+  /** URL to a custom logo/image for the asset */
+  image_url?: string
   created_at: string
 }

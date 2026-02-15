@@ -18,6 +18,7 @@ export default function ListsView({ db, vaultHash }: Props) {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedList, setSelectedList] = useState<VaultList | null>(null)
+  const [viewDirection, setViewDirection] = useState<'forward' | 'back'>('forward')
 
   /* ── Fetch ─────────────────────────────────────────────── */
   const fetchLists = useCallback(async () => {
@@ -96,16 +97,18 @@ export default function ListsView({ db, vaultHash }: Props) {
 
   if (selectedList) {
     return (
-      <AssetListView
-        list={selectedList}
-        db={db}
-        onBack={() => { setSelectedList(null); fetchLists() }}
-      />
+      <div className={viewDirection === 'forward' ? 'animate-view-enter' : 'animate-view-enter-back'}>
+        <AssetListView
+          list={selectedList}
+          db={db}
+          onBack={() => { setViewDirection('back'); setSelectedList(null); fetchLists() }}
+        />
+      </div>
     )
   }
 
   return (
-    <div className="space-y-5">
+    <div className={`space-y-5 ${viewDirection === 'back' ? 'animate-view-enter-back' : 'animate-fade-in'}`}>
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <input
@@ -113,11 +116,11 @@ export default function ListsView({ db, vaultHash }: Props) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search lists..."
-          className="w-full sm:w-64 rounded bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+          className="input-field sm:max-w-[256px]"
         />
         <button
           onClick={() => setModalOpen(true)}
-          className="shrink-0 rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+          className="btn-primary shrink-0"
         >
           + New List
         </button>
@@ -129,7 +132,8 @@ export default function ListsView({ db, vaultHash }: Props) {
           {activeTag && (
             <button
               onClick={() => setActiveTag(null)}
-              className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 transition-colors hover:text-white"
+              className="tag-pill btn-ghost"
+              style={{ borderRadius: 'var(--radius-pill)' }}
             >
               Clear
             </button>
@@ -138,10 +142,10 @@ export default function ListsView({ db, vaultHash }: Props) {
             <button
               key={tag}
               onClick={() => setActiveTag(prev => (prev === tag ? null : tag))}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
+              className={`tag-pill ${
                 activeTag === tag
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  ? 'tag-pill-active'
+                  : 'tag-pill-default'
               }`}
             >
               {tag}
@@ -161,8 +165,31 @@ export default function ListsView({ db, vaultHash }: Props) {
 
       {/* Empty state */}
       {!loading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-800 py-16 text-center">
-          <p className="text-zinc-400 text-sm">
+        <div
+          className="flex flex-col items-center py-20 text-center"
+          style={{
+            border: '1px dashed var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="mb-3"
+            width={24}
+            height={24}
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+            />
+          </svg>
+          <p style={{ color: 'var(--text-tertiary)' }} className="text-sm">
             {lists.length === 0
               ? 'No lists yet. Create your first one.'
               : 'No lists match your search.'}
@@ -170,7 +197,7 @@ export default function ListsView({ db, vaultHash }: Props) {
           {lists.length === 0 && (
             <button
               onClick={() => setModalOpen(true)}
-              className="mt-4 rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+              className="btn-primary mt-4"
             >
               + New List
             </button>
@@ -184,8 +211,8 @@ export default function ListsView({ db, vaultHash }: Props) {
           {filtered.map(list => (
             <div
               key={list.id}
-              onClick={() => setSelectedList(list)}
-              className="group relative cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-zinc-700"
+              onClick={() => { setViewDirection('forward'); setSelectedList(list) }}
+              className="card-surface group relative cursor-pointer p-5"
             >
               {/* Delete button */}
               <button
@@ -193,7 +220,10 @@ export default function ListsView({ db, vaultHash }: Props) {
                   e.stopPropagation()
                   handleDelete(list.id)
                 }}
-                className="absolute right-3 top-3 rounded p-1 text-zinc-600 opacity-0 transition-all hover:bg-zinc-800 hover:text-red-400 group-hover:opacity-100"
+                className="absolute right-3 top-3 rounded p-1 opacity-0 transition-all group-hover:opacity-100"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--error)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}
                 title="Delete list"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
@@ -206,22 +236,31 @@ export default function ListsView({ db, vaultHash }: Props) {
               </button>
 
               {/* Card body */}
-              <h3 className="font-semibold text-white pr-6">{list.name}</h3>
+              <h3
+                className="pr-6"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.125rem',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {list.name}
+              </h3>
 
               {list.tags && list.tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {list.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400"
-                    >
+                    <span key={tag} className="tag-display">
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
 
-              <p className="mt-3 text-xs text-zinc-500">
+              <p
+                className="mt-3"
+                style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}
+              >
                 {list.asset_count} {list.asset_count === 1 ? 'asset' : 'assets'}
               </p>
             </div>
@@ -274,7 +313,7 @@ function CreateListModal({
     <Modal open={open} onClose={onClose} title="New List">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="label-sm block">
             Name
           </label>
           <input
@@ -283,12 +322,12 @@ function CreateListModal({
             onChange={e => setName(e.target.value)}
             placeholder="e.g. AI Stocks"
             autoFocus
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="label-sm block">
             Tags
           </label>
           <input
@@ -296,14 +335,14 @@ function CreateListModal({
             value={tagsInput}
             onChange={e => setTagsInput(e.target.value)}
             placeholder="ai, tech, growth (comma-separated)"
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         <button
           type="submit"
           disabled={!name.trim() || saving}
-          className="w-full rounded bg-amber-600 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+          className="btn-primary w-full"
         >
           {saving ? 'Creating...' : 'Create List'}
         </button>
