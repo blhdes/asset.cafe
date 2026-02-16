@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { generateSeedPhrase, hashSeedPhrase } from '../features/auth/seedPhrase'
+import Logo from '../components/Logo'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -41,51 +42,109 @@ export default function LandingPage() {
   const truncatedHash = hash ? `${hash.slice(0, 16)}...${hash.slice(-16)}` : ''
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ backgroundColor: 'var(--surface-0)' }}
+    >
+      {/* Animated gradient background */}
+      <div
+        className="absolute inset-0 animate-gradient-shift"
+        style={{
+          background:
+            'radial-gradient(ellipse at 30% 20%, rgba(212, 149, 42, 0.06) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(212, 149, 42, 0.04) 0%, transparent 60%)',
+        }}
+      />
+
+      {/* Subtle grid pattern overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Container */}
+      <div className="w-full max-w-md relative z-10">
         {/* Logo / Title */}
         <div className="text-center mb-12">
-          <div className="text-4xl font-bold text-white mb-2">
-            track<span className="text-amber-600">.cafe</span>
+          <div
+            className="inline-flex items-center gap-3 text-5xl"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+          >
+            <Logo size={36} style={{ color: 'var(--accent)', opacity: 0.4 }} />
+            <span>asset<span style={{ color: 'var(--accent)' }}>.cafe</span></span>
           </div>
-          <p className="text-zinc-400 text-sm">Secure, seed-based asset vault</p>
+          <p
+            className="mt-2"
+            style={{
+              color: 'var(--text-tertiary)',
+              fontSize: '0.875rem',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Secure, seed-based asset vault
+          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 space-y-6">
+        <div
+          className="p-8 space-y-6"
+          style={{
+            backgroundColor: 'var(--surface-1)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 8px 40px -12px rgba(0, 0, 0, 0.5)',
+          }}
+        >
           {/* Textarea */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
-              Seed Phrase
-            </label>
+            <label className="label-sm block">Seed Phrase</label>
             <textarea
               value={phrase}
               onChange={e => setPhrase(e.target.value)}
               placeholder="Enter or generate a 12-word seed phrase..."
-              className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded text-white text-sm p-3 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent resize-none"
+              className="input-field h-24 resize-none"
+              style={{ fontFamily: 'var(--font-mono)' }}
             />
           </div>
 
           {/* Generate Button */}
-          <button
-            onClick={handleGeneratePhrase}
-            className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2 px-4 rounded transition-colors text-sm"
-          >
+          <button onClick={handleGeneratePhrase} className="btn-ghost w-full">
             Generate New Seed Phrase
           </button>
 
           {/* Warning */}
           {showWarning && (
-            <div className="bg-amber-950 border border-amber-700 rounded p-3 space-y-2">
-              <p className="text-amber-100 text-sm font-medium">⚠️ Save your seed phrase</p>
-              <p className="text-amber-200 text-xs">
+            <div
+              className="space-y-2"
+              style={{
+                backgroundColor: 'var(--accent-subtle)',
+                border: '1px solid rgba(212, 149, 42, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px',
+              }}
+            >
+              <p
+                style={{
+                  color: 'var(--accent)',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                Save your seed phrase
+              </p>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.75rem',
+                }}
+              >
                 Write it down or store it securely. You'll need it to access your vault.
               </p>
-              <button
-                onClick={handleCopyPhrase}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-3 rounded transition-colors text-sm mt-2"
-              >
-                {copied ? '✓ Copied' : 'Copy to Clipboard'}
+              <button onClick={handleCopyPhrase} className="btn-primary w-full mt-2">
+                {copied ? 'Copied!' : 'Copy to Clipboard'}
               </button>
             </div>
           )}
@@ -94,7 +153,8 @@ export default function LandingPage() {
           <button
             onClick={handleAccessVault}
             disabled={!phrase.trim() || isLoading}
-            className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded transition-colors"
+            className="btn-primary w-full"
+            style={{ padding: '12px 16px', fontSize: '0.9375rem' }}
           >
             {isLoading ? 'Hashing...' : 'Access Vault'}
           </button>
@@ -102,15 +162,26 @@ export default function LandingPage() {
           {/* Hash Preview */}
           {truncatedHash && (
             <div className="space-y-2">
-              <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
-                Vault Hash
-              </p>
-              <div className="bg-zinc-800 border border-zinc-700 rounded p-3">
-                <p className="text-zinc-300 text-xs font-mono break-all">
+              <p className="label-sm">Vault Hash</p>
+              <div
+                style={{
+                  backgroundColor: 'var(--surface-2)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                }}
+              >
+                <p
+                  className="break-all"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
                   {truncatedHash}
                 </p>
               </div>
-              <p className="text-xs text-zinc-500">
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 This hash is derived from your seed phrase and is used to secure your vault.
               </p>
             </div>
@@ -118,7 +189,10 @@ export default function LandingPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-zinc-500 text-xs mt-8">
+        <p
+          className="text-center mt-8"
+          style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}
+        >
           Your seed phrase is never stored or transmitted.
         </p>
       </div>

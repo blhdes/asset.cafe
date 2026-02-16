@@ -27,6 +27,10 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
   const [resTitle, setResTitle] = useState('')
   const [fetchingTitle, setFetchingTitle] = useState(false)
 
+  // ── Hover state for interactive styling ──────────────────
+  const [hoveredResIdx, setHoveredResIdx] = useState<number | null>(null)
+  const [hoveredRemoveIdx, setHoveredRemoveIdx] = useState<number | null>(null)
+
   const hostname = extractHostname(resUrl)
   const isValidUrl = hostname !== ''
   const favicon = faviconUrl(resUrl)
@@ -124,7 +128,7 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="block label-sm">
             Name
           </label>
           <input
@@ -133,13 +137,13 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             onChange={e => setName(e.target.value)}
             placeholder="e.g. NVIDIA Corporation"
             autoFocus
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         {/* Ticker */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="block label-sm">
             Ticker
           </label>
           <input
@@ -147,17 +151,18 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             value={ticker}
             onChange={e => setTicker(e.target.value)}
             placeholder="e.g. NVDA"
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent uppercase"
+            className="input-field"
+            style={{ textTransform: 'uppercase' }}
           />
         </div>
 
         {/* Summary */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+            <label className="block label-sm">
               Summary
             </label>
-            <span className={`text-xs ${summary.length > 250 ? 'text-red-400' : 'text-zinc-500'}`}>
+            <span style={{ fontSize: '0.75rem', color: summary.length > 250 ? 'var(--error)' : 'var(--text-muted)' }}>
               {summary.length}/250
             </span>
           </div>
@@ -167,13 +172,14 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             maxLength={250}
             rows={3}
             placeholder="Brief description (max 250 chars)"
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent resize-none"
+            className="input-field"
+            style={{ resize: 'none' }}
           />
         </div>
 
         {/* Tags */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="block label-sm">
             Tags
           </label>
           <input
@@ -181,37 +187,62 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             value={tagsInput}
             onChange={e => setTagsInput(e.target.value)}
             placeholder="ai, gpu, growth (comma-separated)"
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         {/* ── Resources section ─────────────────────────────── */}
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
-            Resources <span className="text-zinc-500 normal-case">({resources.length} added)</span>
+          <label className="block label-sm">
+            Resources{' '}
+            <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>
+              ({resources.length} added)
+            </span>
           </label>
 
           {/* List of added resources */}
           {resources.length > 0 && (
-            <div className="space-y-1 rounded bg-zinc-800/50 border border-zinc-700/50 p-2">
+            <div
+              className="space-y-1 p-2"
+              style={{
+                background: 'rgba(var(--surface-2-rgb, 39, 39, 42), 0.5)',
+                border: '1px solid rgba(var(--border-hover-rgb, 63, 63, 70), 0.5)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
               {resources.map((res, i) => (
                 <div
                   key={`${res.url}-${i}`}
-                  className="flex items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-zinc-800"
+                  className="flex items-center gap-2 px-2 py-1.5"
+                  style={{
+                    borderRadius: 'var(--radius-md)',
+                    background: hoveredResIdx === i ? 'var(--surface-2)' : 'transparent',
+                  }}
+                  onMouseEnter={() => setHoveredResIdx(i)}
+                  onMouseLeave={() => setHoveredResIdx(null)}
                 >
                   <img
                     src={res.favicon}
                     alt=""
-                    className="h-4 w-4 shrink-0 rounded"
+                    className="h-4 w-4 shrink-0"
+                    style={{ borderRadius: 'var(--radius-sm)' }}
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
-                  <span className="min-w-0 flex-1 truncate text-sm text-zinc-300">
+                  <span
+                    className="min-w-0 flex-1 truncate"
+                    style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}
+                  >
                     {res.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleRemoveResource(i)}
-                    className="shrink-0 rounded p-0.5 text-zinc-600 transition-colors hover:text-red-400"
+                    onMouseEnter={() => setHoveredRemoveIdx(i)}
+                    onMouseLeave={() => setHoveredRemoveIdx(null)}
+                    className="shrink-0 rounded p-0.5"
+                    style={{
+                      color: hoveredRemoveIdx === i ? 'var(--error)' : 'var(--text-muted)',
+                    }}
                     title="Remove"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
@@ -229,7 +260,7 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             value={resUrl}
             onChange={e => setResUrl(e.target.value)}
             placeholder="https://..."
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
 
           {/* Title input (shown when URL is valid) */}
@@ -241,17 +272,27 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
                   value={resTitle}
                   onChange={e => setResTitle(e.target.value)}
                   placeholder={fetchingTitle ? 'Fetching page title...' : 'Page title or label'}
-                  className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                  className="input-field"
                 />
                 {fetchingTitle && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-600 border-t-amber-500" />
+                    <div
+                      className="h-3.5 w-3.5 animate-spin rounded-full border-2"
+                      style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent)' }}
+                    />
                   </div>
                 )}
               </div>
 
               {/* Preview card */}
-              <div className="flex items-center gap-2.5 rounded bg-zinc-800 border border-zinc-700 px-3 py-2.5">
+              <div
+                className="flex items-center gap-2.5 px-3 py-2.5"
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <img
                   src={favicon}
                   alt=""
@@ -259,10 +300,10 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-zinc-200">
+                  <p className="truncate" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     {resTitle || resUrl}
                   </p>
-                  <p className="text-xs text-zinc-500">{hostname}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{hostname}</p>
                 </div>
               </div>
 
@@ -270,7 +311,8 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
               <button
                 type="button"
                 onClick={handleAddResource}
-                className="rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600 hover:text-white"
+                className="btn-ghost"
+                style={{ fontSize: '0.75rem' }}
               >
                 + Add Resource
               </button>
@@ -281,7 +323,7 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
         <button
           type="submit"
           disabled={!name.trim() || !ticker.trim() || saving}
-          className="w-full rounded bg-amber-600 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+          className="btn-primary w-full"
         >
           {saving ? 'Saving...' : 'Add Asset'}
         </button>

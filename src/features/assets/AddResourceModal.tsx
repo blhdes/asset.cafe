@@ -86,7 +86,7 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* URL */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="block label-sm">
             URL
           </label>
           <input
@@ -95,16 +95,16 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
             onChange={e => setUrl(e.target.value)}
             placeholder="https://..."
             autoFocus
-            className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+            className="input-field"
           />
           {url && !isValidUrl && (
-            <p className="text-xs text-red-400">Enter a valid URL</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--error)' }}>Enter a valid URL</p>
           )}
         </div>
 
         {/* Title */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider">
+          <label className="block label-sm">
             Title
           </label>
           <div className="relative">
@@ -113,11 +113,14 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder={fetchingTitle ? 'Fetching page title...' : 'Page title or label'}
-              className="w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+              className="input-field"
             />
             {fetchingTitle && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-600 border-t-amber-500" />
+                <div
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2"
+                  style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--accent)' }}
+                />
               </div>
             )}
           </div>
@@ -125,7 +128,14 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
 
         {/* Preview */}
         {isValidUrl && (
-          <div className="flex items-center gap-2.5 rounded bg-zinc-800 border border-zinc-700 px-3 py-2.5">
+          <div
+            className="flex items-center gap-2.5 px-3 py-2.5"
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
             <img
               src={favicon}
               alt=""
@@ -133,10 +143,10 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
               onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-zinc-200">
+              <p className="truncate" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                 {title || url}
               </p>
-              <p className="text-xs text-zinc-500">{hostname}</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{hostname}</p>
             </div>
           </div>
         )}
@@ -144,7 +154,7 @@ export default function AddResourceModal({ open, onClose, asset, db, onUpdate }:
         <button
           type="submit"
           disabled={!isValidUrl || saving}
-          className="w-full rounded bg-amber-600 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+          className="btn-primary w-full"
         >
           {saving ? 'Saving...' : 'Add Resource'}
         </button>
