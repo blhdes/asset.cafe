@@ -120,6 +120,23 @@ button:focus-visible {
 }
 .animate-modal-sheet { animation: modal-sheet-in 0.3s var(--ease-out) forwards; }
 
+@keyframes modal-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.animate-modal-backdrop-out { animation: modal-backdrop-out 0.25s var(--ease-out) forwards; }
+
+@keyframes modal-sheet-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(100%); }
+}
+.animate-modal-sheet-out { animation: modal-sheet-out 0.25s var(--ease-out) forwards; }
+
+@keyframes modal-content-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(8px); }
+}
+
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -132,19 +149,19 @@ button:focus-visible {
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 .animate-fade-in { animation: fade-in 0.3s var(--ease-out) forwards; }
 
 @keyframes view-enter {
   from { opacity: 0; transform: translateX(12px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 .animate-view-enter { animation: view-enter 0.3s var(--ease-out) forwards; }
 
 @keyframes view-enter-back {
   from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 .animate-view-enter-back { animation: view-enter-back 0.3s var(--ease-out) forwards; }
 
@@ -187,6 +204,11 @@ button:focus-visible {
   border-color: var(--border-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
+}
+/* Kill hover lift while any drag is active — prevents transform stacking with dnd-kit */
+.is-dragging .card-surface:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .grid-expand-wrapper {
@@ -334,11 +356,35 @@ button:focus-visible {
   pointer-events: none;
 }
 
+/* ── Drag-and-drop ────────────────────────────────────── */
+.drag-handle {
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; color: var(--text-muted);
+  touch-action: none;
+  transition: color var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.drag-handle:hover { color: var(--text-tertiary); }
+.drag-handle:active { cursor: grabbing; }
+
+.sortable-ghost { opacity: 0.35; }
+
+.drag-overlay {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--accent) !important;
+  border-radius: var(--radius-md);
+  transform: scale(1.02);
+  z-index: 999;
+}
+
 @media (min-width: 640px) {
   .modal-panel {
     border-radius: var(--radius-lg) !important;
     box-shadow: 0 8px 40px -12px rgba(0, 0, 0, 0.5) !important;
     animation: modal-content-in 0.25s var(--ease-out) forwards !important;
+  }
+  .modal-panel.modal-closing {
+    animation: modal-content-out 0.25s var(--ease-out) forwards !important;
   }
 }
 

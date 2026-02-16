@@ -19,6 +19,9 @@ interface Props {
   onUpdate: (updated: Asset) => void
 }
 
+const CLOSE_MS = 250
+const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+
 export default function DescriptionModal({ open, onClose, asset, db, onUpdate }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(asset.description ?? '')
@@ -28,9 +31,18 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [closeHovered, setCloseHovered] = useState(false)
 
-  /* ── Swipe-to-dismiss refs ───────────────────────────────── */
+  /* ── Close animation state ───────────────────────────── */
+  const [isClosing, setIsClosing] = useState(false)
+  const closingTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  /* ── Swipe-to-dismiss refs ───────────────────────────── */
   const dragStartY = useRef<number | null>(null)
   const currentDragY = useRef(0)
+
+  /* ── Cleanup timer on unmount ────────────────────────── */
+  useEffect(() => () => {
+    if (closingTimer.current) clearTimeout(closingTimer.current)
+  }, [])
 
   // Sync draft when asset changes or modal opens
   useEffect(() => {
@@ -48,27 +60,80 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
     }
   }, [editing])
 
+  /* ── Reset state when open prop changes ──────────────── */
+  useEffect(() => {
+    if (open) {
+      setIsClosing(false)
+      if (closingTimer.current) clearTimeout(closingTimer.current)
+      // Restore CSS open animations (clear inline overrides)
+      if (panelRef.current) {
+        panelRef.current.style.animation = ''
+        panelRef.current.style.transition = ''
+        panelRef.current.style.transform = ''
+        panelRef.current.style.opacity = ''
+      }
+      if (overlayRef.current) {
+        overlayRef.current.style.animation = ''
+        overlayRef.current.style.transition = ''
+        overlayRef.current.style.opacity = ''
+      }
+    } else {
+      setIsClosing(false)
+    }
+  }, [open])
+
+  /* ── Animated close (button / backdrop / escape) ─────── */
+  const animateClose = useCallback(() => {
+    if (isClosing) return
+    const isDesktop = window.matchMedia('(min-width: 640px)').matches
+
+    // Cancel CSS open animation so inline styles take effect
+    if (panelRef.current) {
+      panelRef.current.style.animation = 'none'
+      panelRef.current.style.transition = `transform ${CLOSE_MS}ms ${EASE}, opacity ${CLOSE_MS}ms ${EASE}`
+      panelRef.current.style.transform = isDesktop
+        ? 'scale(0.96) translateY(8px)'
+        : 'translateY(100%)'
+      panelRef.current.style.opacity = '0'
+    }
+    if (overlayRef.current) {
+      overlayRef.current.style.animation = 'none'
+      overlayRef.current.style.transition = `opacity ${CLOSE_MS}ms ${EASE}`
+      overlayRef.current.style.opacity = '0'
+    }
+
+    setIsClosing(true)
+    closingTimer.current = setTimeout(onClose, CLOSE_MS)
+  }, [isClosing, onClose])
+
   // ESC to close
   useEffect(() => {
-    if (!open) return
+    if (!open || isClosing) return
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (editing) { setEditing(false) }
-        else onClose()
+        else animateClose()
       }
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
-  }, [open, editing, onClose])
+  }, [open, editing, isClosing, animateClose])
 
   /* ── Swipe-to-dismiss (mobile) ─────────────────────────── */
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isClosing) return
     dragStartY.current = e.touches[0].clientY
     currentDragY.current = 0
+    // Cancel CSS open animation — its `forwards` fill overrides inline styles
     if (panelRef.current) {
+      panelRef.current.style.animation = 'none'
       panelRef.current.style.transition = 'none'
+      panelRef.current.style.transform = 'translateY(0)'
     }
-  }, [])
+    if (overlayRef.current) {
+      overlayRef.current.style.animation = 'none'
+    }
+  }, [isClosing])
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (dragStartY.current === null) return
@@ -78,24 +143,43 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
       if (panelRef.current) {
         panelRef.current.style.transform = `translateY(${delta}px)`
       }
+      // Progressively fade backdrop
+      if (overlayRef.current) {
+        const progress = Math.min(delta / 300, 1)
+        overlayRef.current.style.opacity = String(1 - progress * 0.6)
+      }
     }
   }, [])
 
   const onTouchEnd = useCallback(() => {
-    if (panelRef.current) {
-      panelRef.current.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-      if (currentDragY.current > 80) {
+    if (currentDragY.current > 80) {
+      // Dismiss via swipe
+      if (panelRef.current) {
+        panelRef.current.style.transition = `transform ${CLOSE_MS}ms ${EASE}`
         panelRef.current.style.transform = 'translateY(100%)'
-        setTimeout(onClose, 200)
-      } else {
+      }
+      if (overlayRef.current) {
+        overlayRef.current.style.transition = `opacity ${CLOSE_MS}ms ${EASE}`
+        overlayRef.current.style.opacity = '0'
+      }
+      setIsClosing(true)
+      closingTimer.current = setTimeout(onClose, CLOSE_MS)
+    } else {
+      // Snap back
+      if (panelRef.current) {
+        panelRef.current.style.transition = `transform 0.2s ${EASE}`
         panelRef.current.style.transform = 'translateY(0)'
+      }
+      if (overlayRef.current) {
+        overlayRef.current.style.transition = `opacity 0.2s ${EASE}`
+        overlayRef.current.style.opacity = '1'
       }
     }
     dragStartY.current = null
     currentDragY.current = 0
   }, [onClose])
 
-  if (!open) return null
+  if (!open && !isClosing) return null
 
   const handleSave = async () => {
     setSaving(true)
@@ -122,8 +206,8 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
   return createPortal(
     <div
       ref={overlayRef}
-      onClick={e => { if (e.target === overlayRef.current) onClose() }}
-      className="animate-modal-backdrop fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={e => { if (e.target === overlayRef.current && !isClosing) animateClose() }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-modal-backdrop"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div
@@ -208,7 +292,7 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
               </>
             )}
             <button
-              onClick={onClose}
+              onClick={isClosing ? undefined : animateClose}
               onMouseEnter={() => setCloseHovered(true)}
               onMouseLeave={() => setCloseHovered(false)}
               className="ml-2 rounded p-1"

@@ -9,6 +9,7 @@ export interface VaultList {
   vault_hash: string
   name: string
   tags: string[]
+  position: number
   created_at: string
   updated_at: string
 }
@@ -26,5 +27,6 @@ export interface Asset {
   resources: Resource[]
   /** URL to a custom logo/image for the asset */
   image_url?: string
+  position: number
   created_at: string
 }

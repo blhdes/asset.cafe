@@ -14,9 +14,12 @@ asset.cafe is a privacy-first web application for managing curated lists of fina
 - **Zero backend storage of credentials**: The seed phrase is hashed client-side and never transmitted. Your vault hash is your database ID.
 - **Supabase multi-tenancy**: Each vault is an isolated partition in a shared Supabase database.
 - **Asset management**: Organize assets into lists, add logos, descriptions (markdown), tags, and resource links.
+- **Edit lists**: Rename, edit tags, or delete lists from an edit modal with confirmation flow.
+- **Drag-and-drop reordering**: Reorder lists, asset cards, and resources via pointer or touch drag. Powered by @dnd-kit with accessible keyboard support.
+- **Inline summary editing**: Edit asset summaries directly from the card with a pencil icon toggle.
 - **Custom asset images**: Upload logos via URL to replace the default gradient ticker badge.
 - **Full markdown editor**: Built-in toolbar for formatting descriptions (bold, italic, headings, lists, code, links).
-- **Responsive UI**: Mobile-first design with bottom-sheet modals, swipe-to-dismiss, and desktop hover interactions.
+- **Responsive UI**: Mobile-first design with bottom-sheet modals, swipe-to-dismiss, and desktop hover interactions. Drag handles hidden on mobile for clean touch UX.
 - **Premium design system**: Dark slate + amber/gold palette, Instrument Serif + General Sans + JetBrains Mono typography, sharp editorial radii.
 
 ---
@@ -28,6 +31,7 @@ asset.cafe is a privacy-first web application for managing curated lists of fina
 - **Database**: Supabase (PostgreSQL)
 - **Routing**: React Router 7
 - **Auth**: Client-side seed phrase → PBKDF2 hash → vault partition
+- **Drag & Drop**: @dnd-kit (core, sortable, utilities)
 - **Markdown**: marked.js for rendering
 - **Icons**: Heroicons (inline SVG)
 
@@ -65,6 +69,7 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 - `vault_hash` (text) — partition key
 - `name` (text)
 - `tags` (text[])
+- `position` (integer) — manual sort order for drag-and-drop reordering
 - `created_at`, `updated_at`
 
 **Assets** (`assets` table)
@@ -75,8 +80,9 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 - `summary` (text, max 250 chars)
 - `description` (text, markdown)
 - `tags` (text[])
-- `resources` (jsonb) — array of `{title, url, favicon}`
+- `resources` (jsonb) — array of `{title, url, favicon}` (order is array order, drag-sortable)
 - `image_url` (text, nullable) — custom logo URL
+- `position` (integer) — manual sort order for drag-and-drop reordering
 - `created_at`
 
 ### 4. UI/UX Flow
@@ -84,10 +90,12 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 1. **Landing Page**: Generate or enter seed phrase → hash → navigate to `/vault/{hash}`
 2. **Vault Page**: View/create lists → click list → view/add assets
 3. **Asset Cards**:
-   - Collapsed: ticker badge (gradient or custom image), name, tags (desktop), resource count
-   - Expanded: summary, description editor, resources, tags CRUD, delete
+   - Collapsed: drag handle (desktop only), ticker badge (gradient or custom image), name, tags (desktop), resource count
+   - Expanded: inline-editable summary, description editor, sortable resources, tags CRUD, delete
    - Hover ticker badge (when expanded) → camera icon overlay → click → add/edit custom logo
-4. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
+4. **Drag & Drop**: Lists, asset cards, and resources can be reordered by dragging (pointer or touch). Drag handles appear on hover (desktop). Reordering is disabled when search/tag filters are active. Position persists to database.
+5. **Edit Lists**: Pencil icon on list cards opens an edit modal for renaming, editing tags, or deleting the list (with confirmation).
+6. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
 
 ---
 
@@ -119,6 +127,8 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 - `.animate-modal-sheet`: Bottom-sheet slide-up (mobile)
 - `.animate-modal-backdrop`: Fade-in overlay
 - `.grid-expand-wrapper`: CSS grid 0fr↔1fr smooth expand/collapse
+- `.drag-handle`: 6-dot grip icon, cursor grab, visible on hover (desktop only)
+- `.drag-overlay`: Elevated card clone during drag (box-shadow, border accent, z-999)
 
 ---
 
@@ -156,6 +166,7 @@ asset-cafe/
 │   │       └── ListsView.tsx
 │   ├── lib/
 │   │   ├── favicon.ts           # Google favicon proxy
+│   │   ├── position.ts          # Batch position update helper (DnD)
 │   │   ├── supabase.ts          # Supabase client factory
 │   │   └── types.ts             # TypeScript types
 │   ├── pages/
@@ -164,6 +175,7 @@ asset-cafe/
 │   ├── index.css                # Full design system + animations
 │   └── main.tsx
 ├── supabase-migration-image-url.sql  # DB migration for image_url column
+├── supabase-migration-position.sql   # DB migration for position columns (DnD)
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -234,10 +246,11 @@ CREATE POLICY "assets_update" ON assets FOR UPDATE USING (true);
 CREATE POLICY "assets_delete" ON assets FOR DELETE USING (true);
 ```
 
-Run the migration for `image_url`:
+Run the migrations for `image_url` and `position`:
 ```bash
 # In Supabase SQL Editor, paste contents of:
 cat supabase-migration-image-url.sql
+cat supabase-migration-position.sql
 ```
 
 ### 3. Environment Variables
@@ -278,6 +291,8 @@ npm run preview  # Preview production build
 - Name it (e.g., "Tech Stocks", "Real Estate")
 - Optionally add tags for organization
 - Click a list card to view its assets
+- **Edit**: Click the pencil icon on a list card → rename, edit tags, or delete
+- **Reorder** (desktop): Drag the grip handle to reorder lists. Order persists across sessions.
 
 ### Managing Assets
 
@@ -286,12 +301,16 @@ npm run preview  # Preview production build
 - Click **Save**
 - The asset appears as a collapsed card
 
+### Reordering Assets
+
+On desktop, drag the grip handle (six dots) on any asset card to reorder within a list. Reordering is disabled when search or tag filters are active. Resources within an expanded asset can also be drag-sorted.
+
 ### Expanding Assets
 
 Click any asset card to expand it. You'll see:
-- **Summary** (if set)
+- **Summary** (if set) — click the pencil icon to edit inline, or click "+ Add Summary" if empty
 - **Description**: Click "View / Edit" to open the markdown editor
-- **Resources**: URLs to external links (investor decks, articles, etc.)
+- **Resources**: URLs to external links (investor decks, articles, etc.) — drag to reorder on desktop
 - **Tags**: Add/remove tags for filtering
 - **Custom Image**: Hover over the ticker badge → camera icon → click → paste logo URL
 
@@ -342,7 +361,7 @@ Click the **Lock** button (top-right) to:
 - **Encrypted notes**: End-to-end encrypted notes per asset (using seed phrase as key)
 - **Multi-vault support**: Manage multiple vaults from one session
 - **Price tracking**: Integrate live price APIs for stocks/crypto
-- **Search & filters**: Global search across all assets, tag filtering
+- **Global search**: Search across all lists and assets from the vault page
 - **Dark/Light mode toggle**: User preference for theme
 - **Collaborative vaults**: Share vault access via shared seed phrase
 

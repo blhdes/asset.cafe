@@ -1,23 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Asset, VaultList } from '../../lib/types'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import AssetCard from './AssetCard'
 import AddAssetModal from './AddAssetModal'
 import { Skeleton } from '../../components/Skeleton'
 import { toast } from '../../components/Toast'
+import { updatePositions } from '../../lib/position'
 
 interface Props {
   list: VaultList
   db: SupabaseClient
   onBack: () => void
+  onEdit?: () => void
 }
 
-export default function AssetListView({ list, db, onBack }: Props) {
+export default function AssetListView({ list, db, onBack, onEdit }: Props) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
+
+  /* ── DnD sensors ──────────────────────────────────────── */
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
 
   /* ── Fetch ─────────────────────────────────────────────── */
   const fetchAssets = useCallback(async () => {
@@ -25,7 +53,7 @@ export default function AssetListView({ list, db, onBack }: Props) {
       .from('assets')
       .select('*')
       .eq('list_id', list.id)
-      .order('created_at', { ascending: false })
+      .order('position', { ascending: true })
 
     if (error) {
       toast(error.message)
@@ -45,6 +73,8 @@ export default function AssetListView({ list, db, onBack }: Props) {
     assets.forEach(a => a.tags?.forEach(t => set.add(t)))
     return Array.from(set).sort()
   }, [assets])
+
+  const isFiltered = Boolean(search || activeTag)
 
   const filtered = useMemo(() => {
     let result = assets
@@ -72,6 +102,29 @@ export default function AssetListView({ list, db, onBack }: Props) {
   const handleCreated = (asset: Asset) => {
     setAssets(prev => [asset, ...prev])
   }
+
+  /* ── DnD handlers ──────────────────────────────────────── */
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragId(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = assets.findIndex(a => a.id === active.id)
+    const newIndex = assets.findIndex(a => a.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(assets, oldIndex, newIndex)
+    setAssets(reordered)
+
+    const updates = reordered.map((a, i) => ({ id: a.id, position: i }))
+    await updatePositions(db, 'assets', updates)
+  }
+
+  const draggedAsset = activeDragId ? assets.find(a => a.id === activeDragId) : null
 
   /* ── Render ────────────────────────────────────────────── */
   return (
@@ -102,12 +155,27 @@ export default function AssetListView({ list, db, onBack }: Props) {
             {assets.length} {assets.length === 1 ? 'asset' : 'assets'}
           </p>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="btn-primary shrink-0"
-        >
-          + Add Asset
-        </button>
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="btn-ghost flex items-center gap-1"
+              title="Edit list"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25h5.5a.75.75 0 0 0 0-1.5h-5.5A2.75 2.75 0 0 0 2 5.75v8.5A2.75 2.75 0 0 0 4.75 17h8.5A2.75 2.75 0 0 0 16 14.25v-5.5a.75.75 0 0 0-1.5 0v5.5c0 .69-.56 1.25-1.25 1.25h-8.5c-.69 0-1.25-.56-1.25-1.25v-8.5Z" />
+              </svg>
+              <span className="hidden sm:inline" style={{ fontSize: '0.8125rem' }}>Edit</span>
+            </button>
+          )}
+          <button
+            onClick={() => setModalOpen(true)}
+            className="btn-primary shrink-0"
+          >
+            + Add Asset
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -201,19 +269,65 @@ export default function AssetListView({ list, db, onBack }: Props) {
         </div>
       )}
 
-      {/* Asset cards */}
+      {/* Asset cards with DnD */}
       {!loading && filtered.length > 0 && (
-        <div className="space-y-2">
-          {filtered.map(asset => (
-            <AssetCard
-              key={asset.id}
-              asset={asset}
-              db={db}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filtered.map(a => a.id)}
+            strategy={verticalListSortingStrategy}
+            disabled={isFiltered}
+          >
+            <div className={`space-y-2 ${activeDragId ? 'is-dragging' : ''}`}>
+              {filtered.map(asset => (
+                <SortableAssetWrapper
+                  key={asset.id}
+                  asset={asset}
+                  db={db}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  isDragDisabled={isFiltered}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          {createPortal(
+            <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+              {draggedAsset ? (
+                <div
+                  className="drag-overlay"
+                  style={{
+                    background: 'var(--surface-1)',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {draggedAsset.ticker}
+                  </span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {draggedAsset.name}
+                  </span>
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body,
+          )}
+        </DndContext>
       )}
 
       {/* Add modal */}
@@ -223,6 +337,53 @@ export default function AssetListView({ list, db, onBack }: Props) {
         db={db}
         listId={list.id}
         onCreated={handleCreated}
+      />
+    </div>
+  )
+}
+
+/* ── Sortable wrapper for AssetCard ──────────────────────── */
+
+function SortableAssetWrapper({
+  asset,
+  db,
+  onUpdate,
+  onDelete,
+  isDragDisabled,
+}: {
+  asset: Asset
+  db: SupabaseClient
+  onUpdate: (updated: Asset) => void
+  onDelete: (id: string) => void
+  isDragDisabled: boolean
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: asset.id, disabled: isDragDisabled })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.35 : 1,
+  }
+
+  const dragHandleProps = isDragDisabled
+    ? undefined
+    : { ...attributes, ...listeners }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <AssetCard
+        asset={asset}
+        db={db}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        dragHandleProps={dragHandleProps}
       />
     </div>
   )

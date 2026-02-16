@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Asset, Resource } from '../../lib/types'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { faviconUrl } from '../../lib/favicon'
 import { toast } from '../../components/Toast'
 import Modal from '../../components/Modal'
@@ -40,9 +59,10 @@ interface Props {
   db: SupabaseClient
   onUpdate: (updated: Asset) => void
   onDelete: (id: string) => void
+  dragHandleProps?: Record<string, any>
 }
 
-export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
+export default function AssetCard({ asset, db, onUpdate, onDelete, dragHandleProps }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tagInput, setTagInput] = useState('')
@@ -50,6 +70,15 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
   const [resourceModalOpen, setResourceModalOpen] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [badgeHovered, setBadgeHovered] = useState(false)
+  const [activeDragResourceId, setActiveDragResourceId] = useState<string | null>(null)
+  const [editingSummary, setEditingSummary] = useState(false)
+  const [summaryDraft, setSummaryDraft] = useState('')
+
+  /* ── DnD sensors for resources ─────────────────────────── */
+  const resourceSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  )
 
   /* ── Resources ─────────────────────────────────────────── */
   const handleRemoveResource = async (index: number) => {
@@ -62,6 +91,25 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
 
     if (error) { toast(error.message); return }
     onUpdate({ ...asset, resources: updated })
+  }
+
+  const handleReorderResources = async (event: DragEndEvent) => {
+    setActiveDragResourceId(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = resources.findIndex((_, i) => `resource-${i}` === active.id)
+    const newIndex = resources.findIndex((_, i) => `resource-${i}` === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(resources, oldIndex, newIndex)
+    onUpdate({ ...asset, resources: reordered })
+
+    const { error } = await db
+      .from('assets')
+      .update({ resources: reordered })
+      .eq('id', asset.id)
+    if (error) toast(error.message)
   }
 
   /* ── Tags CRUD ─────────────────────────────────────────── */
@@ -113,6 +161,18 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
     toast(value ? 'Image saved' : 'Image removed', 'success')
   }
 
+  /* ── Summary ──────────────────────────────────────────── */
+  const handleSaveSummary = async () => {
+    const trimmed = summaryDraft.trim()
+    const { error } = await db
+      .from('assets')
+      .update({ summary: trimmed })
+      .eq('id', asset.id)
+    if (error) { toast(error.message); return }
+    onUpdate({ ...asset, summary: trimmed })
+    setEditingSummary(false)
+  }
+
   /* ── Render ────────────────────────────────────────────── */
   const displayTags = asset.tags?.slice(0, 3) ?? []
   const resources = asset.resources ?? []
@@ -121,13 +181,24 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
 
   return (
     <>
-    <div className="card-surface" style={{ overflow: 'hidden' }}>
+    <div className="card-surface group" style={{ overflow: 'hidden' }}>
       {/* ── Collapsed row ──────────────────────────────────── */}
-      <button
+      <div
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className="relative flex w-full items-center gap-3 pr-4 pl-3 sm:pl-6 py-3 text-left cursor-pointer"
         style={{ minHeight: 44 }}
       >
+        {/* Drag handle — absolute so it doesn't steal space from tags; hidden on mobile */}
+        {dragHandleProps && (
+          <div
+            className="drag-handle absolute left-1 top-1/2 -translate-y-1/2 p-1 opacity-0 transition-opacity group-hover:opacity-100 hidden sm:flex"
+            {...dragHandleProps}
+            onClick={e => e.stopPropagation()}
+          >
+            <GripIcon />
+          </div>
+        )}
+
         {/* Ticker badge */}
         <span
           className="ticker-badge"
@@ -255,7 +326,7 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
         >
           <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
         </svg>
-      </button>
+      </div>
 
       {/* ── Expanded panel (always rendered, CSS grid animation) */}
       <div className="grid-expand-wrapper" data-expanded={expanded}>
@@ -269,14 +340,61 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
             }}
           >
             {/* Summary */}
-            {asset.summary && (
-              <div>
-                <h4 className="label-sm" style={{ marginBottom: 4 }}>Summary</h4>
+            <div>
+              <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
+                <h4 className="label-sm" style={{ margin: 0 }}>Summary</h4>
+                {!editingSummary && asset.summary && (
+                  <button
+                    onClick={() => { setEditingSummary(true); setSummaryDraft(asset.summary || '') }}
+                    className="btn-ghost p-0.5"
+                    style={{ color: 'var(--text-muted)', lineHeight: 0 }}
+                    title="Edit summary"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                      <path d="m13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.138 7.387a.75.75 0 0 0-.186.334l-.758 2.655a.375.375 0 0 0 .462.462l2.655-.758a.75.75 0 0 0 .334-.186l4.874-4.874a1.75 1.75 0 0 0 0-2.475Z" />
+                      <path d="M3.5 4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 3.5 14h7a1.5 1.5 0 0 0 1.5-1.5V9.5a.5.5 0 0 0-1 0v2.5a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5H6a.5.5 0 0 0 0-1H3.5Z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {editingSummary ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={summaryDraft}
+                    onChange={e => setSummaryDraft(e.target.value)}
+                    maxLength={250}
+                    className="input-field"
+                    style={{ fontSize: '0.875rem', resize: 'vertical' }}
+                    rows={3}
+                    autoFocus
+                    placeholder="Brief summary (max 250 characters)..."
+                  />
+                  <div className="flex items-center gap-2">
+                    <button onClick={handleSaveSummary} className="btn-primary" style={{ fontSize: '0.75rem' }}>
+                      Save
+                    </button>
+                    <button onClick={() => setEditingSummary(false)} className="btn-ghost" style={{ fontSize: '0.75rem' }}>
+                      Cancel
+                    </button>
+                    <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                      {summaryDraft.length}/250
+                    </span>
+                  </div>
+                </div>
+              ) : asset.summary ? (
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
                   {asset.summary}
                 </p>
-              </div>
-            )}
+              ) : (
+                <button
+                  onClick={() => { setEditingSummary(true); setSummaryDraft('') }}
+                  className="btn-ghost"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  + Add Summary
+                </button>
+              )}
+            </div>
 
             {/* Description */}
             <div>
@@ -297,15 +415,53 @@ export default function AssetCard({ asset, db, onUpdate, onDelete }: Props) {
               </h4>
 
               {resources.length > 0 ? (
-                <div className="space-y-0.5 mb-3">
-                  {resources.map((resource, i) => (
-                    <ResourceRow
-                      key={`${resource.url}-${i}`}
-                      resource={resource}
-                      onRemove={() => handleRemoveResource(i)}
-                    />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={resourceSensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={(e: DragStartEvent) => setActiveDragResourceId(e.active.id as string)}
+                  onDragEnd={handleReorderResources}
+                >
+                  <SortableContext
+                    items={resources.map((_, i) => `resource-${i}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-0.5 mb-3">
+                      {resources.map((resource, i) => (
+                        <SortableResourceRow
+                          key={`${resource.url}-${i}`}
+                          id={`resource-${i}`}
+                          resource={resource}
+                          onRemove={() => handleRemoveResource(i)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                  {createPortal(
+                    <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+                      {activeDragResourceId !== null ? (() => {
+                        const idx = parseInt(activeDragResourceId.replace('resource-', ''))
+                        const r = resources[idx]
+                        return r ? (
+                          <div
+                            className="drag-overlay"
+                            style={{
+                              background: 'var(--surface-1)',
+                              padding: '6px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              fontSize: '0.875rem',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {r.title}
+                          </div>
+                        ) : null
+                      })() : null}
+                    </DragOverlay>,
+                    document.body,
+                  )}
+                </DndContext>
               ) : (
                 <p style={{ marginBottom: 12, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   No resources saved yet.
@@ -596,9 +752,61 @@ function ImageUrlModal({
   )
 }
 
+/* ── 6-dot grip icon ─────────────────────────────────────── */
+
+function GripIcon({ className }: { className?: string }) {
+  return (
+    <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" className={className}>
+      <circle cx="2" cy="2" r="1.5" />
+      <circle cx="8" cy="2" r="1.5" />
+      <circle cx="2" cy="8" r="1.5" />
+      <circle cx="8" cy="8" r="1.5" />
+      <circle cx="2" cy="14" r="1.5" />
+      <circle cx="8" cy="14" r="1.5" />
+    </svg>
+  )
+}
+
+/* ── Sortable resource row wrapper ───────────────────────── */
+
+function SortableResourceRow({
+  id,
+  resource,
+  onRemove,
+}: {
+  id: string
+  resource: Resource
+  onRemove: () => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.35 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ResourceRow
+        resource={resource}
+        onRemove={onRemove}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  )
+}
+
 /* ── Resource row component ──────────────────────────────── */
 
-function ResourceRow({ resource, onRemove }: { resource: Resource; onRemove: () => void }) {
+function ResourceRow({ resource, onRemove, dragHandleProps }: { resource: Resource; onRemove: () => void; dragHandleProps?: Record<string, any> }) {
   const [faviconError, setFaviconError] = useState(false)
   const [rowHovered, setRowHovered] = useState(false)
   const [linkHovered, setLinkHovered] = useState(false)
@@ -607,16 +815,27 @@ function ResourceRow({ resource, onRemove }: { resource: Resource; onRemove: () 
 
   return (
     <div
-      className="group/resource flex items-center gap-2.5 rounded -mx-2"
+      className="group/resource flex items-center gap-2.5 rounded -mx-2 py-1.5 pr-2 pl-1 sm:pl-2"
       onMouseEnter={() => setRowHovered(true)}
       onMouseLeave={() => setRowHovered(false)}
       style={{
-        padding: '6px 8px',
         backgroundColor: rowHovered ? 'var(--surface-2)' : 'transparent',
         transition: 'background-color 150ms var(--ease-out)',
         borderRadius: 'var(--radius-md)',
       }}
     >
+      {/* Drag handle */}
+      {dragHandleProps && (
+        <div
+          className="drag-handle hidden sm:flex opacity-0 transition-opacity group-hover/resource:opacity-100"
+          style={{ padding: 2 }}
+          {...dragHandleProps}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        >
+          <GripIcon className="h-3 w-3" />
+        </div>
+      )}
+
       {/* Favicon */}
       {!faviconError ? (
         <img
