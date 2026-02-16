@@ -59,10 +59,10 @@ interface Props {
   db: SupabaseClient
   onUpdate: (updated: Asset) => void
   onDelete: (id: string) => void
-  dragHandleProps?: Record<string, any>
+  showDragHandle?: boolean
 }
 
-export default function AssetCard({ asset, db, onUpdate, onDelete, dragHandleProps }: Props) {
+export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandle }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tagInput, setTagInput] = useState('')
@@ -77,7 +77,7 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, dragHandlePro
   /* ── DnD sensors for resources ─────────────────────────── */
   const resourceSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
   )
 
   /* ── Resources ─────────────────────────────────────────── */
@@ -188,12 +188,10 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, dragHandlePro
         className="relative flex w-full items-center gap-3 pr-4 pl-3 sm:pl-6 py-3 text-left cursor-pointer"
         style={{ minHeight: 44 }}
       >
-        {/* Drag handle — absolute so it doesn't steal space from tags; hidden on mobile */}
-        {dragHandleProps && (
+        {/* Drag handle — visual indicator only (desktop); listeners are on the wrapper */}
+        {showDragHandle && (
           <div
             className="drag-handle absolute left-1 top-1/2 -translate-y-1/2 p-1 opacity-0 transition-opacity group-hover:opacity-100 hidden sm:flex"
-            {...dragHandleProps}
-            onClick={e => e.stopPropagation()}
           >
             <GripIcon />
           </div>
@@ -787,18 +785,21 @@ function SortableResourceRow({
     isDragging,
   } = useSortable({ id })
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.35 : 1,
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
+    touchAction: 'none',
   }
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <ResourceRow
         resource={resource}
         onRemove={onRemove}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        showDragHandle
       />
     </div>
   )
@@ -806,7 +807,7 @@ function SortableResourceRow({
 
 /* ── Resource row component ──────────────────────────────── */
 
-function ResourceRow({ resource, onRemove, dragHandleProps }: { resource: Resource; onRemove: () => void; dragHandleProps?: Record<string, any> }) {
+function ResourceRow({ resource, onRemove, showDragHandle }: { resource: Resource; onRemove: () => void; showDragHandle?: boolean }) {
   const [faviconError, setFaviconError] = useState(false)
   const [rowHovered, setRowHovered] = useState(false)
   const [linkHovered, setLinkHovered] = useState(false)
@@ -824,13 +825,11 @@ function ResourceRow({ resource, onRemove, dragHandleProps }: { resource: Resour
         borderRadius: 'var(--radius-md)',
       }}
     >
-      {/* Drag handle */}
-      {dragHandleProps && (
+      {/* Drag handle — visual indicator only (desktop); listeners are on the wrapper */}
+      {showDragHandle && (
         <div
           className="drag-handle hidden sm:flex opacity-0 transition-opacity group-hover/resource:opacity-100"
           style={{ padding: 2 }}
-          {...dragHandleProps}
-          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           <GripIcon className="h-3 w-3" />
         </div>
