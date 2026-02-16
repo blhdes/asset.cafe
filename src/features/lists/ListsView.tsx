@@ -47,7 +47,7 @@ export default function ListsView({ db, vaultHash }: Props) {
   /* ── DnD sensors ──────────────────────────────────────── */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
   )
 
   /* ── Fetch ─────────────────────────────────────────────── */
@@ -313,7 +313,7 @@ export default function ListsView({ db, vaultHash }: Props) {
             strategy={rectSortingStrategy}
             disabled={isFiltered}
           >
-            <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${activeDragId ? 'is-dragging' : ''}`}>
+            <div className={`grid gap-5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 ${activeDragId ? 'is-dragging' : ''}`}>
               {filtered.map(list => (
                 <SortableListCard
                   key={list.id}
@@ -432,11 +432,14 @@ function SortableListCard({
     isDragging,
   } = useSortable({ id: list.id, disabled: isDragDisabled })
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.35 : 1,
+    ...(isDragDisabled ? {} : { WebkitTouchCallout: 'none', userSelect: 'none', touchAction: 'none' }),
   }
+
+  const dragProps = isDragDisabled ? {} : { ...attributes, ...listeners }
 
   return (
     <div
@@ -444,14 +447,12 @@ function SortableListCard({
       style={style}
       onClick={onSelect}
       className="card-surface group relative cursor-pointer"
+      {...dragProps}
     >
-      {/* Drag handle */}
+      {/* Drag handle — visual indicator only (desktop); listeners are on the card */}
       {!isDragDisabled && (
         <div
           className="drag-handle absolute left-1 top-1/2 -translate-y-1/2 p-1 opacity-0 transition-opacity group-hover:opacity-100 hidden sm:flex"
-          {...attributes}
-          {...listeners}
-          onClick={e => e.stopPropagation()}
         >
           <GripIcon />
         </div>

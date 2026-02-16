@@ -44,7 +44,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
   /* ── DnD sensors ──────────────────────────────────────── */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
   )
 
   /* ── Fetch ─────────────────────────────────────────────── */
@@ -282,7 +282,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
             strategy={verticalListSortingStrategy}
             disabled={isFiltered}
           >
-            <div className={`space-y-2 ${activeDragId ? 'is-dragging' : ''}`}>
+            <div className={`space-y-3 sm:space-y-2 ${activeDragId ? 'is-dragging' : ''}`}>
               {filtered.map(asset => (
                 <SortableAssetWrapper
                   key={asset.id}
@@ -366,24 +366,23 @@ function SortableAssetWrapper({
     isDragging,
   } = useSortable({ id: asset.id, disabled: isDragDisabled })
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.35 : 1,
+    ...(isDragDisabled ? {} : { WebkitTouchCallout: 'none', userSelect: 'none', touchAction: 'none' }),
   }
 
-  const dragHandleProps = isDragDisabled
-    ? undefined
-    : { ...attributes, ...listeners }
+  const dragProps = isDragDisabled ? {} : { ...attributes, ...listeners }
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...dragProps}>
       <AssetCard
         asset={asset}
         db={db}
         onUpdate={onUpdate}
         onDelete={onDelete}
-        dragHandleProps={dragHandleProps}
+        showDragHandle={!isDragDisabled}
       />
     </div>
   )
