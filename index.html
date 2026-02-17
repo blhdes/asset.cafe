@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -10,7 +10,17 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#08090d" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>asset.cafe</title>
+    <title>warket</title>
+
+    <!-- Flash prevention: apply saved theme before CSS loads -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('warket-theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      })();
+    </script>
 
     <!-- Fonts: Instrument Serif (display), JetBrains Mono (mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

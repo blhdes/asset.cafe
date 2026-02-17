@@ -1,4 +1,4 @@
-# asset.cafe
+# warket
 
 **A secure, seed-based asset vault for organizing and tracking financial assets with privacy at its core.**
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-asset.cafe is a privacy-first web application for managing curated lists of financial assets (stocks, crypto, real estate, etc.). All data is encrypted and isolated per user using a **seed phrase-based vault system** — no accounts, no emails, just a 12-word phrase that unlocks your personal database.
+warket is a privacy-first web application for managing curated lists of financial assets (stocks, crypto, real estate, etc.). All data is encrypted and isolated per user using a **seed phrase-based vault system** — no accounts, no emails, just a 12-word phrase that unlocks your personal database.
 
 ### Key Features
 
@@ -15,19 +15,20 @@ asset.cafe is a privacy-first web application for managing curated lists of fina
 - **Supabase multi-tenancy**: Each vault is an isolated partition in a shared Supabase database.
 - **Asset management**: Organize assets into lists, add logos, descriptions (markdown), tags, and resource links.
 - **Edit lists**: Rename, edit tags, or delete lists from an edit modal with confirmation flow.
-- **Drag-and-drop reordering**: Reorder lists, asset cards, and resources via pointer or touch drag. Powered by @dnd-kit with accessible keyboard support.
+- **Drag-and-drop reordering**: Reorder lists, asset cards, and resources via pointer or touch drag. Powered by @dnd-kit with accessible keyboard support. DnD is automatically disabled when cards are expanded or filters are active.
 - **Inline summary editing**: Edit asset summaries directly from the card with a pencil icon toggle.
 - **Custom asset images**: Upload logos via URL to replace the default gradient ticker badge.
 - **Full markdown editor**: Built-in toolbar for formatting descriptions (bold, italic, headings, lists, code, links).
+- **Dark/Light theme**: Toggle between dark and light themes. Preference persists in localStorage with flash-free page loads.
 - **Responsive UI**: Mobile-first design with bottom-sheet modals, swipe-to-dismiss, and desktop hover interactions. Drag handles hidden on mobile for clean touch UX.
-- **Premium design system**: Dark slate + amber/gold palette, Instrument Serif + General Sans + JetBrains Mono typography, sharp editorial radii.
+- **Design system**: Deep teal accent, Instrument Serif + General Sans + JetBrains Mono typography, sharp editorial radii, dual-theme CSS custom properties.
 
 ---
 
 ## Tech Stack
 
 - **Frontend**: React 19 + TypeScript + Vite
-- **Styling**: Tailwind CSS 4 + custom CSS design tokens
+- **Styling**: Tailwind CSS 4 + custom CSS design tokens (dual-theme via `data-theme` attribute)
 - **Database**: Supabase (PostgreSQL)
 - **Routing**: React Router 7
 - **Auth**: Client-side seed phrase → PBKDF2 hash → vault partition
@@ -93,9 +94,10 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
    - Collapsed: drag handle (desktop only), ticker badge (gradient or custom image), name, tags (desktop), resource count
    - Expanded: inline-editable summary, description editor, sortable resources, tags CRUD, delete
    - Hover ticker badge (when expanded) → camera icon overlay → click → add/edit custom logo
-4. **Drag & Drop**: Lists, asset cards, and resources can be reordered by dragging (pointer or touch). Drag handles appear on hover (desktop). Reordering is disabled when search/tag filters are active. Position persists to database.
+4. **Drag & Drop**: Lists, asset cards, and resources can be reordered by dragging (pointer or touch). Drag handles appear on hover (desktop). Reordering is disabled when search/tag filters are active or when any asset card is expanded (to allow scrolling on mobile). Position persists to database.
 5. **Edit Lists**: Pencil icon on list cards opens an edit modal for renaming, editing tags, or deleting the list (with confirmation).
-6. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
+6. **Theme Toggle**: Sun/moon icon in the top-right corner. Dark mode by default. Smooth 250ms cross-fade transition with flash prevention on page load.
+7. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
 
 ---
 
@@ -106,11 +108,23 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 - **Body**: General Sans (Fontshare)
 - **Mono**: JetBrains Mono (Google Fonts)
 
-### Color Palette (Dark Slate + Amber/Gold)
-- **Surfaces**: `#08090d`, `#0e1018`, `#161922`, `#1e2028`
-- **Accent**: `#d4952a` (amber/gold)
-- **Borders**: `#1a1d26`, `#2a2d38`, `#3a3d48`
-- **Text**: `#e8e8e8`, `#b8b8b8`, `#888`, `#555`
+### Color Palette (Deep Teal, dual-theme)
+
+**Dark theme:**
+- **Surfaces**: `#08090d`, `#0e1018`, `#161922`, `#1e212d`
+- **Accent**: `#2a9d8f` (deep teal)
+- **Borders**: `#262a38`, `#353a4d`, `#464b62`
+- **Text**: `#f0f0f2`, `#a0a3b1`, `#636678`, `#464959`
+
+**Light theme:**
+- **Surfaces**: `#f8f9fb`, `#ffffff`, `#f0f1f5`, `#e4e6ed`
+- **Accent**: `#1a8377` (deeper teal for contrast)
+- **Borders**: `#dfe1e8`, `#c8cbd6`, `#b0b4c3`
+- **Text**: `#1a1d27`, `#4a4e5c`, `#7a7f91`, `#a0a4b4`
+
+### Logo
+
+Ascending W — an asymmetric double-bottom chart pattern where the right arm rises higher than the left, communicating bullish breakout momentum. Monochrome, uses `currentColor` for theme compatibility.
 
 ### Border Radii
 - `--radius-sm`: 2px
@@ -120,44 +134,46 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 
 ### Key CSS Classes
 - `.card-surface`: Hover lift + shadow + border lighten
-- `.ticker-badge`: 36×36px square gradient badge (or custom image)
+- `.ticker-badge`: 36x36px square gradient badge (or custom image)
 - `.btn-primary` / `.btn-ghost`: Button variants
 - `.input-field`: Unified input styling
 - `.tag-pill`: Pill badge with inset shadow when active
 - `.animate-modal-sheet`: Bottom-sheet slide-up (mobile)
 - `.animate-modal-backdrop`: Fade-in overlay
-- `.grid-expand-wrapper`: CSS grid 0fr↔1fr smooth expand/collapse
+- `.grid-expand-wrapper`: CSS grid 0fr/1fr smooth expand/collapse
 - `.drag-handle`: 6-dot grip icon, cursor grab, visible on hover (desktop only)
 - `.drag-overlay`: Elevated card clone during drag (box-shadow, border accent, z-999)
+- `.theme-toggle`: Sun/moon toggle button
 
 ---
 
 ## Project Structure
 
 ```
-asset-cafe/
+warket/
 ├── public/
-│   ├── favicon.svg              # C7 "Mid Handle" logo
-│   ├── favicon.ico              # Legacy favicon
+│   ├── favicon.svg              # W ascending breakout logo (dark bg + teal stroke)
+│   ├── favicon.ico
 │   ├── favicon-16x16.png
 │   ├── favicon-32x32.png
 │   ├── apple-touch-icon.png
 │   ├── android-chrome-*.png
 │   └── site.webmanifest
-├── scripts/
-│   └── generate-favicons.mjs    # Sharp-based favicon generation
 ├── src/
 │   ├── components/
-│   │   ├── Logo.tsx             # C7 favicon as React component
+│   │   ├── Logo.tsx             # W ascending breakout as React component
 │   │   ├── MarkdownEditor.tsx   # Custom markdown toolbar + textarea
 │   │   ├── Modal.tsx            # Shared modal (portal + swipe)
 │   │   ├── Skeleton.tsx         # Loading skeletons
+│   │   ├── ThemeToggle.tsx      # Sun/moon theme toggle button
 │   │   └── Toast.tsx            # Toast notifications
+│   ├── contexts/
+│   │   └── ThemeContext.tsx      # Theme provider (dark/light, localStorage)
 │   ├── features/
 │   │   ├── assets/
 │   │   │   ├── AddAssetModal.tsx
 │   │   │   ├── AddResourceModal.tsx
-│   │   │   ├── AssetCard.tsx    # Main asset card (expand/collapse, image modal)
+│   │   │   ├── AssetCard.tsx    # Main asset card (expand/collapse, DnD, image modal)
 │   │   │   ├── AssetListView.tsx
 │   │   │   └── DescriptionModal.tsx
 │   │   ├── auth/
@@ -172,7 +188,7 @@ asset-cafe/
 │   ├── pages/
 │   │   ├── LandingPage.tsx
 │   │   └── VaultPage.tsx
-│   ├── index.css                # Full design system + animations
+│   ├── index.css                # Full design system + dual-theme tokens + animations
 │   └── main.tsx
 ├── supabase-migration-image-url.sql  # DB migration for image_url column
 ├── supabase-migration-position.sql   # DB migration for position columns (DnD)
@@ -193,7 +209,7 @@ asset-cafe/
 ### 1. Clone & Install
 ```bash
 git clone <repository-url>
-cd asset-cafe
+cd warket
 npm install
 ```
 
@@ -303,7 +319,7 @@ npm run preview  # Preview production build
 
 ### Reordering Assets
 
-On desktop, drag the grip handle (six dots) on any asset card to reorder within a list. Reordering is disabled when search or tag filters are active. Resources within an expanded asset can also be drag-sorted.
+On desktop, drag the grip handle (six dots) on any asset card to reorder within a list. Reordering is automatically disabled when search or tag filters are active, or when any asset card is expanded (to preserve scrollability on mobile). Resources within an expanded asset can also be drag-sorted.
 
 ### Expanding Assets
 
@@ -362,7 +378,6 @@ Click the **Lock** button (top-right) to:
 - **Multi-vault support**: Manage multiple vaults from one session
 - **Price tracking**: Integrate live price APIs for stocks/crypto
 - **Global search**: Search across all lists and assets from the vault page
-- **Dark/Light mode toggle**: User preference for theme
 - **Collaborative vaults**: Share vault access via shared seed phrase
 
 ---
@@ -384,8 +399,8 @@ MIT License. See `LICENSE` file for details.
 - **Design & Development**: Built with care for privacy and premium UX
 - **Fonts**: Instrument Serif (Google Fonts), General Sans (Fontshare), JetBrains Mono
 - **Icons**: Heroicons
-- **Logo**: Custom "C7 - Mid Handle" design (coffee cup made of ascending bars)
+- **Logo**: Custom ascending W — asymmetric double-bottom chart pattern
 
 ---
 
-**asset.cafe** — Your assets, your vault, your privacy.
+**warket** — Your market, your vault.

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { generateSeedPhrase, hashSeedPhrase } from '../features/auth/seedPhrase'
 import Logo from '../components/Logo'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -46,12 +47,17 @@ export default function LandingPage() {
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{ backgroundColor: 'var(--surface-0)' }}
     >
+      {/* Theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+
       {/* Animated gradient background */}
       <div
         className="absolute inset-0 animate-gradient-shift"
         style={{
           background:
-            'radial-gradient(ellipse at 30% 20%, rgba(212, 149, 42, 0.06) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(212, 149, 42, 0.04) 0%, transparent 60%)',
+            'radial-gradient(ellipse at 30% 20%, var(--accent-subtle) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, var(--accent-subtle) 0%, transparent 60%)',
         }}
       />
 
@@ -60,7 +66,7 @@ export default function LandingPage() {
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            `linear-gradient(var(--grid-line-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line-color) 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
         }}
       />
@@ -74,7 +80,7 @@ export default function LandingPage() {
             style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
           >
             <Logo size={36} style={{ color: 'var(--accent)', opacity: 0.4 }} />
-            <span>asset<span style={{ color: 'var(--accent)' }}>.cafe</span></span>
+            <span><span style={{ color: 'var(--accent)' }}>w</span>arket</span>
           </div>
           <p
             className="mt-2"
@@ -84,7 +90,7 @@ export default function LandingPage() {
               letterSpacing: '0.05em',
             }}
           >
-            Secure, seed-based asset vault
+            Your market, your vault
           </p>
         </div>
 
@@ -95,7 +101,7 @@ export default function LandingPage() {
             backgroundColor: 'var(--surface-1)',
             border: '1px solid var(--border-default)',
             borderRadius: 'var(--radius-lg)',
-            boxShadow: '0 8px 40px -12px rgba(0, 0, 0, 0.5)',
+            boxShadow: 'var(--landing-shadow)',
           }}
         >
           {/* Textarea */}
@@ -121,7 +127,7 @@ export default function LandingPage() {
               className="space-y-2"
               style={{
                 backgroundColor: 'var(--accent-subtle)',
-                border: '1px solid rgba(212, 149, 42, 0.25)',
+                border: '1px solid var(--accent-glow)',
                 borderRadius: 'var(--radius-md)',
                 padding: '12px',
               }}
