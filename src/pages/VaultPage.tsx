@@ -4,6 +4,7 @@ import { vaultClient } from '../lib/supabase'
 import ToastContainer from '../components/Toast'
 import ListsView from '../features/lists/ListsView'
 import Logo from '../components/Logo'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function VaultPage() {
   const { hash } = useParams<{ hash: string }>()
@@ -53,7 +54,7 @@ export default function VaultPage() {
       <header
         className="sticky top-0 z-40 gradient-border-bottom"
         style={{
-          backgroundColor: 'rgba(8, 9, 13, 0.85)',
+          backgroundColor: 'var(--header-bg)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
         }}
@@ -72,7 +73,7 @@ export default function VaultPage() {
             }}
           >
             <Logo size={18} style={{ color: 'var(--accent)', opacity: 0.45 }} />
-            <span>asset<span style={{ color: 'var(--accent)' }}>.cafe</span></span>
+            <span><span style={{ color: 'var(--accent)' }}>w</span>arket</span>
           </button>
 
           <div className="flex items-center gap-3">
@@ -103,6 +104,8 @@ export default function VaultPage() {
                 />
               </svg>
             </button>
+
+            <ThemeToggle />
 
             {/* Lock button */}
             <button

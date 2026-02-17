@@ -37,7 +37,7 @@ export default function ToastContainer() {
             padding: '12px 16px 16px',
             borderRadius: 'var(--radius-md)',
             fontSize: '0.875rem',
-            boxShadow: '0 4px 24px -4px rgba(0,0,0,0.4)',
+            boxShadow: 'var(--card-shadow)',
             backgroundColor: t.type === 'error' ? 'var(--error-bg)' : 'var(--success-bg)',
             border: `1px solid ${t.type === 'error' ? 'var(--error-border)' : 'var(--success-border)'}`,
             color: t.type === 'error' ? 'var(--error)' : 'var(--success)',

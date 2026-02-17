@@ -149,7 +149,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       onClick={e => { if (e.target === overlayRef.current && !isClosing) animateClose() }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-modal-backdrop"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'var(--overlay-bg)',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
       }}
@@ -161,7 +161,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
           backgroundColor: 'var(--surface-1)',
           border: '1px solid var(--border-hover)',
           borderRadius: '16px 16px 0 0',
-          boxShadow: '0 -8px 40px -12px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--modal-shadow)',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',

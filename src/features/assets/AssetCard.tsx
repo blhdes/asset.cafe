@@ -60,10 +60,17 @@ interface Props {
   onUpdate: (updated: Asset) => void
   onDelete: (id: string) => void
   showDragHandle?: boolean
+  onExpandChange?: (expanded: boolean) => void
 }
 
-export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandle }: Props) {
+export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandle, onExpandChange }: Props) {
   const [expanded, setExpanded] = useState(false)
+
+  const toggleExpanded = () => {
+    const next = !expanded
+    setExpanded(next)
+    onExpandChange?.(next)
+  }
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tagInput, setTagInput] = useState('')
   const [descModalOpen, setDescModalOpen] = useState(false)
@@ -184,7 +191,7 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
     <div className="card-surface group" style={{ overflow: 'hidden' }}>
       {/* ── Collapsed row ──────────────────────────────────── */}
       <div
-        onClick={() => setExpanded(!expanded)}
+        onClick={toggleExpanded}
         className="relative flex w-full items-center gap-3 pr-4 pl-3 sm:pl-6 py-3 text-left cursor-pointer"
         style={{ minHeight: 44 }}
       >
@@ -230,7 +237,7 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: 'rgba(0,0,0,0.55)',
+                backgroundColor: 'var(--overlay-bg)',
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
               }}

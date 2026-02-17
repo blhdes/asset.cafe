@@ -208,7 +208,7 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
       ref={overlayRef}
       onClick={e => { if (e.target === overlayRef.current && !isClosing) animateClose() }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-modal-backdrop"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(4px)' }}
     >
       <div
         ref={panelRef}

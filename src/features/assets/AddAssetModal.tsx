@@ -205,8 +205,8 @@ export default function AddAssetModal({ open, onClose, db, listId, onCreated }: 
             <div
               className="space-y-1 p-2"
               style={{
-                background: 'rgba(var(--surface-2-rgb, 39, 39, 42), 0.5)',
-                border: '1px solid rgba(var(--border-hover-rgb, 63, 63, 70), 0.5)',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-md)',
               }}
             >

@@ -40,6 +40,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const [expandedCount, setExpandedCount] = useState(0)
 
   /* ── DnD sensors ──────────────────────────────────────── */
   const sensors = useSensors(
@@ -75,6 +76,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
   }, [assets])
 
   const isFiltered = Boolean(search || activeTag)
+  const isDragDisabled = isFiltered || expandedCount > 0
 
   const filtered = useMemo(() => {
     let result = assets
@@ -280,7 +282,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
           <SortableContext
             items={filtered.map(a => a.id)}
             strategy={verticalListSortingStrategy}
-            disabled={isFiltered}
+            disabled={isDragDisabled}
           >
             <div className={`space-y-3 sm:space-y-2 ${activeDragId ? 'is-dragging' : ''}`}>
               {filtered.map(asset => (
@@ -290,7 +292,8 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
                   db={db}
                   onUpdate={handleUpdate}
                   onDelete={handleDelete}
-                  isDragDisabled={isFiltered}
+                  isDragDisabled={isDragDisabled}
+                  onExpandChange={exp => setExpandedCount(c => c + (exp ? 1 : -1))}
                 />
               ))}
             </div>
@@ -350,12 +353,14 @@ function SortableAssetWrapper({
   onUpdate,
   onDelete,
   isDragDisabled,
+  onExpandChange,
 }: {
   asset: Asset
   db: SupabaseClient
   onUpdate: (updated: Asset) => void
   onDelete: (id: string) => void
   isDragDisabled: boolean
+  onExpandChange: (expanded: boolean) => void
 }) {
   const {
     attributes,
@@ -383,6 +388,7 @@ function SortableAssetWrapper({
         onUpdate={onUpdate}
         onDelete={onDelete}
         showDragHandle={!isDragDisabled}
+        onExpandChange={onExpandChange}
       />
     </div>
   )
