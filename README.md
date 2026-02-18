@@ -13,9 +13,12 @@ warket is a privacy-first web application for managing curated lists of financia
 - **Seed-phrase authentication**: Generate a 12-word BIP39 seed phrase. Your vault is deterministically derived from its hash.
 - **Zero backend storage of credentials**: The seed phrase is hashed client-side and never transmitted. Your vault hash is your database ID.
 - **Supabase multi-tenancy**: Each vault is an isolated partition in a shared Supabase database.
+- **Read-only shared vaults**: Generate a cryptographic share key from your vault hash to give anyone read-only access — no seed phrase exposed. Viewers can browse and export, but cannot create, edit, or delete.
+- **Import/Export**: Export your vault as JSON (all lists or selective). Import with auto-positioning and same-name list merging.
 - **Asset management**: Organize assets into lists, add logos, descriptions (markdown), tags, and resource links.
+- **Smart search**: Search lists by name, or by asset names and tickers within lists.
 - **Edit lists**: Rename, edit tags, or delete lists from an edit modal with confirmation flow.
-- **Drag-and-drop reordering**: Reorder lists, asset cards, and resources via pointer or touch drag. Powered by @dnd-kit with accessible keyboard support. DnD is automatically disabled when cards are expanded or filters are active.
+- **Drag-and-drop reordering**: Reorder lists, asset cards, and resources via pointer or touch drag. Powered by @dnd-kit with accessible keyboard support. DnD is automatically disabled when cards are expanded, filters are active, or in read-only mode.
 - **Inline summary editing**: Edit asset summaries directly from the card with a pencil icon toggle.
 - **Custom asset images**: Upload logos via URL to replace the default gradient ticker badge.
 - **Full markdown editor**: Built-in toolbar for formatting descriptions (bold, italic, headings, lists, code, links).
@@ -31,7 +34,8 @@ warket is a privacy-first web application for managing curated lists of financia
 - **Styling**: Tailwind CSS 4 + custom CSS design tokens (dual-theme via `data-theme` attribute)
 - **Database**: Supabase (PostgreSQL)
 - **Routing**: React Router 7
-- **Auth**: Client-side seed phrase → PBKDF2 hash → vault partition
+- **Auth**: Client-side seed phrase → SHA-256 hash → vault partition
+- **Sharing**: SHA-256 with domain separation (`:share` suffix) for one-way share key derivation
 - **Drag & Drop**: @dnd-kit (core, sortable, utilities)
 - **Markdown**: marked.js for rendering
 - **Icons**: Heroicons (inline SVG)
@@ -43,29 +47,58 @@ warket is a privacy-first web application for managing curated lists of financia
 ### 1. Seed Phrase Generation & Hashing
 
 On the landing page, users can:
-- Generate a new 12-word BIP39 seed phrase (using `bip39` library)
-- Or paste an existing seed phrase
+- Generate a new 12-word BIP39 seed phrase
+- Paste an existing seed phrase to access their vault
+- Paste a 64-character share key to open a read-only shared vault
 
-The seed phrase is hashed client-side using **PBKDF2** (100,000 iterations, SHA-256) to produce a 256-bit vault hash. This hash becomes the `vault_hash` partition key in the database.
+The app auto-detects the input type: a 64-character hex string is treated as a share key, anything else is hashed as a seed phrase.
+
+The seed phrase is hashed client-side using **SHA-256** (via Web Crypto API) to produce a 256-bit vault hash. This hash becomes the `vault_hash` partition key in the database.
 
 **No seed phrase is ever sent to the server.** Only the hash is used for database queries.
 
 ### 2. Vault Isolation
 
-Each vault is isolated via Row-Level Security (RLS) policies in Supabase. All queries filter by `vault_hash`:
-
-```sql
--- Example RLS policy
-CREATE POLICY "Users can only see their own lists"
-ON lists FOR SELECT
-USING (vault_hash = current_setting('request.jwt.claims')::json->>'vault_hash');
-```
+Each vault is isolated via Row-Level Security (RLS) policies in Supabase. All queries filter by `vault_hash`.
 
 The vault hash is stored in `sessionStorage` for the session duration. Clicking "Lock" clears it and returns to the landing page.
 
-### 3. Data Model
+### 3. Read-Only Shared Vaults
 
-**Lists** (`vault_lists` table)
+Vault owners can generate a **share key** — a deterministic, one-way hash derived from the vault hash using SHA-256 with domain separation (`:share` suffix). This ensures:
+
+- The share key cannot be reversed to obtain the vault hash
+- The same vault always produces the same share key
+- Share keys grant read-only access only
+
+**Flow:**
+1. Vault owner clicks the **Share** button (link icon) in the header
+2. App computes `SHA-256(vault_hash + ":share")` → share key
+3. Share key is upserted into `vault_shares` table and copied to clipboard
+4. Anyone can paste the share key on the landing page → opens `/shared/{shareHash}` in read-only mode
+
+**Read-only mode hides:** create/edit/delete buttons, drag-and-drop, import functionality, tag editing, summary editing, and image changes. Export with selective list picking remains available.
+
+### 4. Import/Export
+
+**Export:**
+- Downloads vault data as a timestamped JSON file (`warket-export-YYYY-MM-DD.json`)
+- Includes all lists with their assets (name, ticker, tags, summary, description, resources)
+- Position values are excluded from export — order is preserved by array sequence
+
+**Selective Export (shared vaults):**
+- In read-only mode, an `ExportModal` allows choosing which lists to export
+- Checkboxes for each list with a "Select all" toggle
+
+**Import:**
+- Upload a JSON file via the import button in the vault header
+- Auto-positions new lists after existing ones
+- Same-name lists (case-insensitive) are merged — imported assets are appended after existing assets
+- Validates file structure before importing
+
+### 5. Data Model
+
+**Lists** (`lists` table)
 - `id` (UUID)
 - `vault_hash` (text) — partition key
 - `name` (text)
@@ -75,7 +108,7 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 
 **Assets** (`assets` table)
 - `id` (UUID)
-- `list_id` (UUID) — foreign key to `vault_lists`
+- `list_id` (UUID) — foreign key to `lists`
 - `name` (text)
 - `ticker` (text)
 - `summary` (text, max 250 chars)
@@ -86,18 +119,25 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 - `position` (integer) — manual sort order for drag-and-drop reordering
 - `created_at`
 
-### 4. UI/UX Flow
+**Vault Shares** (`vault_shares` table)
+- `vault_hash` (text) — primary key
+- `share_hash` (text) — unique, indexed
+- `created_at`
 
-1. **Landing Page**: Generate or enter seed phrase → hash → navigate to `/vault/{hash}`
-2. **Vault Page**: View/create lists → click list → view/add assets
-3. **Asset Cards**:
+### 6. UI/UX Flow
+
+1. **Landing Page**: Generate or enter seed phrase / paste share key → hash → navigate to `/vault/{hash}` or `/shared/{shareHash}`
+2. **Vault Page**: View/create lists → click list → view/add assets. Header: session badge, import, export, share, theme toggle, lock.
+3. **Shared Vault Page**: Read-only view with export, theme toggle, and home button. "Read-only" badge in header.
+4. **Asset Cards**:
    - Collapsed: drag handle (desktop only), ticker badge (gradient or custom image), name, tags (desktop), resource count
    - Expanded: inline-editable summary, description editor, sortable resources, tags CRUD, delete
    - Hover ticker badge (when expanded) → camera icon overlay → click → add/edit custom logo
-4. **Drag & Drop**: Lists, asset cards, and resources can be reordered by dragging (pointer or touch). Drag handles appear on hover (desktop). Reordering is disabled when search/tag filters are active or when any asset card is expanded (to allow scrolling on mobile). Position persists to database.
-5. **Edit Lists**: Pencil icon on list cards opens an edit modal for renaming, editing tags, or deleting the list (with confirmation).
-6. **Theme Toggle**: Sun/moon icon in the top-right corner. Dark mode by default. Smooth 250ms cross-fade transition with flash prevention on page load.
-7. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
+   - Read-only: view-only mode — no edit controls, static tags, plain resource list
+5. **Drag & Drop**: Lists, asset cards, and resources can be reordered by dragging (pointer or touch). Drag handles appear on hover (desktop). Reordering is disabled when search/tag filters are active, when any asset card is expanded, or in read-only mode.
+6. **Edit Lists**: Pencil icon on list cards opens an edit modal for renaming, editing tags, or deleting the list (with confirmation).
+7. **Theme Toggle**: Sun/moon icon in the top-right corner. Dark mode by default. Smooth 250ms cross-fade transition with flash prevention on page load.
+8. **Modals**: All modals use React portals (`createPortal(jsx, document.body)`) to avoid CSS stacking context issues. Mobile: bottom-sheet with swipe-to-dismiss. Desktop: centered with scale+fade animation.
 
 ---
 
@@ -126,6 +166,15 @@ The vault hash is stored in `sessionStorage` for the session duration. Clicking 
 
 Ascending W — an asymmetric double-bottom chart pattern where the right arm rises higher than the left, communicating bullish breakout momentum. Monochrome, uses `currentColor` for theme compatibility.
 
+### Favicon
+
+Transparent background with a subtle teal-tinted rounded rectangle (`fill="#2a9d8f" opacity="0.12"`) and the W stroke. Works on both light and dark browser tab bars.
+
+### Layout
+
+- **Desktop max-width**: 1400px for vault and shared vault pages
+- **Grid**: Responsive grid — 1 column (mobile) → 2 columns (sm) → 3 columns (lg) → 4 columns (xl)
+
 ### Border Radii
 - `--radius-sm`: 2px
 - `--radius-md`: 6px
@@ -138,6 +187,7 @@ Ascending W — an asymmetric double-bottom chart pattern where the right arm ri
 - `.btn-primary` / `.btn-ghost`: Button variants
 - `.input-field`: Unified input styling
 - `.tag-pill`: Pill badge with inset shadow when active
+- `.session-badge`: Vault hash / read-only indicator in header
 - `.animate-modal-sheet`: Bottom-sheet slide-up (mobile)
 - `.animate-modal-backdrop`: Fade-in overlay
 - `.grid-expand-wrapper`: CSS grid 0fr/1fr smooth expand/collapse
@@ -152,7 +202,7 @@ Ascending W — an asymmetric double-bottom chart pattern where the right arm ri
 ```
 warket/
 ├── public/
-│   ├── favicon.svg              # W ascending breakout logo (dark bg + teal stroke)
+│   ├── favicon.svg              # W logo (transparent bg + teal tint)
 │   ├── favicon.ico
 │   ├── favicon-16x16.png
 │   ├── favicon-32x32.png
@@ -161,6 +211,7 @@ warket/
 │   └── site.webmanifest
 ├── src/
 │   ├── components/
+│   │   ├── ExportModal.tsx      # Selective list export (checkboxes + select all)
 │   │   ├── Logo.tsx             # W ascending breakout as React component
 │   │   ├── MarkdownEditor.tsx   # Custom markdown toolbar + textarea
 │   │   ├── Modal.tsx            # Shared modal (portal + swipe)
@@ -173,25 +224,32 @@ warket/
 │   │   ├── assets/
 │   │   │   ├── AddAssetModal.tsx
 │   │   │   ├── AddResourceModal.tsx
-│   │   │   ├── AssetCard.tsx    # Main asset card (expand/collapse, DnD, image modal)
+│   │   │   ├── AssetCard.tsx    # Main asset card (expand/collapse, DnD, readOnly)
 │   │   │   ├── AssetListView.tsx
 │   │   │   └── DescriptionModal.tsx
 │   │   ├── auth/
-│   │   │   └── seedPhrase.ts    # BIP39 + PBKDF2 hashing
+│   │   │   └── seedPhrase.ts    # BIP39 generation, SHA-256 hashing, share key derivation
 │   │   └── lists/
-│   │       └── ListsView.tsx
+│   │       └── ListsView.tsx    # List grid, DnD, search, tag filter, readOnly
 │   ├── lib/
 │   │   ├── favicon.ts           # Google favicon proxy
 │   │   ├── position.ts          # Batch position update helper (DnD)
 │   │   ├── supabase.ts          # Supabase client factory
-│   │   └── types.ts             # TypeScript types
+│   │   ├── types.ts             # TypeScript types
+│   │   └── vaultExport.ts       # Export/import logic with selective list support
 │   ├── pages/
-│   │   ├── LandingPage.tsx
-│   │   └── VaultPage.tsx
+│   │   ├── LandingPage.tsx      # Unified seed phrase / share key input
+│   │   ├── SharedVaultPage.tsx  # Read-only vault page (via share key)
+│   │   └── VaultPage.tsx        # Full vault with CRUD, import/export, share
 │   ├── index.css                # Full design system + dual-theme tokens + animations
 │   └── main.tsx
-├── supabase-migration-image-url.sql  # DB migration for image_url column
-├── supabase-migration-position.sql   # DB migration for position columns (DnD)
+├── supabase/
+│   └── migrations/
+│       ├── 00001_create_tables.sql
+│       ├── 00002_rename_articles_to_resources.sql
+│       └── 00003_create_vault_shares.sql
+├── supabase-migration-image-url.sql
+├── supabase-migration-position.sql
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -215,58 +273,21 @@ npm install
 
 ### 2. Supabase Setup
 
-Create a Supabase project, then run the following SQL in the **SQL Editor**:
+Create a Supabase project, then run the migration files in order in the **SQL Editor**:
 
-```sql
--- Create vault_lists table
-CREATE TABLE vault_lists (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  vault_hash TEXT NOT NULL,
-  name TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX idx_vault_lists_hash ON vault_lists(vault_hash);
-
--- Create assets table
-CREATE TABLE assets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  list_id UUID REFERENCES vault_lists(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  ticker TEXT NOT NULL,
-  summary TEXT,
-  description TEXT,
-  tags TEXT[] DEFAULT '{}',
-  resources JSONB DEFAULT '[]',
-  image_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX idx_assets_list ON assets(list_id);
-
--- Enable RLS
-ALTER TABLE vault_lists ENABLE ROW LEVEL SECURITY;
-ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies (example - adjust for your auth setup)
-CREATE POLICY "vault_lists_select" ON vault_lists FOR SELECT USING (true);
-CREATE POLICY "vault_lists_insert" ON vault_lists FOR INSERT WITH CHECK (true);
-CREATE POLICY "vault_lists_update" ON vault_lists FOR UPDATE USING (true);
-CREATE POLICY "vault_lists_delete" ON vault_lists FOR DELETE USING (true);
-
-CREATE POLICY "assets_select" ON assets FOR SELECT USING (true);
-CREATE POLICY "assets_insert" ON assets FOR INSERT WITH CHECK (true);
-CREATE POLICY "assets_update" ON assets FOR UPDATE USING (true);
-CREATE POLICY "assets_delete" ON assets FOR DELETE USING (true);
-```
-
-Run the migrations for `image_url` and `position`:
 ```bash
-# In Supabase SQL Editor, paste contents of:
-cat supabase-migration-image-url.sql
-cat supabase-migration-position.sql
+# 1. Core tables
+supabase/migrations/00001_create_tables.sql
+
+# 2. Rename articles to resources
+supabase/migrations/00002_rename_articles_to_resources.sql
+
+# 3. Vault shares (for read-only sharing)
+supabase/migrations/00003_create_vault_shares.sql
+
+# 4. Additional column migrations
+supabase-migration-image-url.sql
+supabase-migration-position.sql
 ```
 
 ### 3. Environment Variables
@@ -301,14 +322,35 @@ npm run preview  # Preview production build
 3. **Copy to Clipboard** (optional)
 4. **Access Vault**: Click "Access Vault" → app hashes the phrase and navigates to your vault
 
+### Sharing Your Vault (Read-Only)
+
+1. Inside your vault, click the **Share** button (link icon) in the header
+2. A share key is generated and copied to your clipboard
+3. Send the share key to anyone
+4. They paste it on the landing page → "Access Vault" → opens the vault in read-only mode
+5. Viewers can browse lists, expand asset cards, view descriptions, and selectively export data
+
+### Importing & Exporting
+
+**Export:**
+- Click the **Export** button (down-arrow icon) in the vault header
+- A JSON file downloads with all your lists and assets
+
+**Import:**
+- Click the **Import** button (up-arrow icon) in the vault header
+- Select a `.json` file
+- New lists are added after existing ones
+- If a list with the same name already exists, assets are merged into it
+
 ### Managing Lists
 
-- Click **"+ Create List"** to add a new list
+- Click **"+ New List"** to add a new list
 - Name it (e.g., "Tech Stocks", "Real Estate")
 - Optionally add tags for organization
 - Click a list card to view its assets
 - **Edit**: Click the pencil icon on a list card → rename, edit tags, or delete
 - **Reorder** (desktop): Drag the grip handle to reorder lists. Order persists across sessions.
+- **Search**: Type in the search bar to filter by list name, asset name, or ticker
 
 ### Managing Assets
 
@@ -316,10 +358,6 @@ npm run preview  # Preview production build
 - Fill in: Name, Ticker, Summary (optional, max 250 chars)
 - Click **Save**
 - The asset appears as a collapsed card
-
-### Reordering Assets
-
-On desktop, drag the grip handle (six dots) on any asset card to reorder within a list. Reordering is automatically disabled when search or tag filters are active, or when any asset card is expanded (to preserve scrollability on mobile). Resources within an expanded asset can also be drag-sorted.
 
 ### Expanding Assets
 
@@ -329,28 +367,6 @@ Click any asset card to expand it. You'll see:
 - **Resources**: URLs to external links (investor decks, articles, etc.) — drag to reorder on desktop
 - **Tags**: Add/remove tags for filtering
 - **Custom Image**: Hover over the ticker badge → camera icon → click → paste logo URL
-
-### Custom Asset Images
-
-1. Expand an asset
-2. Hover over the ticker badge (gradient square)
-3. A camera icon overlay appears
-4. Click the badge
-5. Paste a direct image URL (PNG, JPG, SVG)
-6. Preview loads
-7. Click **Save** → image replaces the gradient
-8. Click **Remove** to revert to gradient
-
-### Markdown Editor
-
-The description modal includes a toolbar:
-- **Bold** (Ctrl+B), **Italic** (Ctrl+I), **Strikethrough**
-- **Headings** (H2), **Blockquote**
-- **Bullet list**, **Ordered list**
-- **Code** (inline or block)
-- **Link** (Ctrl+K)
-
-Type directly or select text and click a format button.
 
 ### Locking Your Vault
 
@@ -365,20 +381,20 @@ Click the **Lock** button (top-right) to:
 
 - **Seed phrase is everything**: Losing your seed phrase = permanent loss of vault access.
 - **No password recovery**: There is no "forgot password" — the seed phrase IS the password.
-- **Client-side hashing**: PBKDF2 is computed in the browser. The hash is deterministic (same phrase = same hash).
-- **Row-Level Security (RLS)**: Supabase policies must be properly configured to isolate vaults. The example policies above allow all operations for simplicity — **in production, tie RLS to JWT claims or vault_hash validation**.
+- **Client-side hashing**: SHA-256 is computed in the browser. The hash is deterministic (same phrase = same hash).
+- **Share keys are one-way**: A share key is derived from the vault hash using domain-separated SHA-256 (`hash + ":share"`). It cannot be reversed to obtain the vault hash or seed phrase.
+- **Read-only enforcement**: Shared vault pages render with `readOnly` prop, which disables all mutation UI. Database-level RLS provides the actual security boundary.
+- **Row-Level Security (RLS)**: Supabase policies must be properly configured to isolate vaults. The migration files include RLS policies — **in production, tie RLS to JWT claims or vault_hash validation**.
 - **HTTPS required**: Always serve over HTTPS in production to protect seed phrases in transit.
 
 ---
 
 ## Roadmap / Future Enhancements
 
-- **Import/Export**: JSON export of vault data
 - **Encrypted notes**: End-to-end encrypted notes per asset (using seed phrase as key)
 - **Multi-vault support**: Manage multiple vaults from one session
 - **Price tracking**: Integrate live price APIs for stocks/crypto
-- **Global search**: Search across all lists and assets from the vault page
-- **Collaborative vaults**: Share vault access via shared seed phrase
+- **Collaborative vaults**: Shared seed phrase with write access and role management
 
 ---
 

@@ -31,9 +31,10 @@ interface Props {
   db: SupabaseClient
   onBack: () => void
   onEdit?: () => void
+  readOnly?: boolean
 }
 
-export default function AssetListView({ list, db, onBack, onEdit }: Props) {
+export default function AssetListView({ list, db, onBack, onEdit, readOnly }: Props) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -76,7 +77,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
   }, [assets])
 
   const isFiltered = Boolean(search || activeTag)
-  const isDragDisabled = isFiltered || expandedCount > 0
+  const isDragDisabled = isFiltered || expandedCount > 0 || Boolean(readOnly)
 
   const filtered = useMemo(() => {
     let result = assets
@@ -171,12 +172,14 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
               <span className="hidden sm:inline" style={{ fontSize: '0.8125rem' }}>Edit</span>
             </button>
           )}
-          <button
-            onClick={() => setModalOpen(true)}
-            className="btn-primary shrink-0"
-          >
-            + Add Asset
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="btn-primary shrink-0"
+            >
+              + Add Asset
+            </button>
+          )}
         </div>
       </div>
 
@@ -260,7 +263,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
               ? 'No assets in this list yet.'
               : 'No assets match your search.'}
           </p>
-          {assets.length === 0 && (
+          {assets.length === 0 && !readOnly && (
             <button
               onClick={() => setModalOpen(true)}
               className="btn-primary mt-4"
@@ -294,6 +297,7 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
                   onDelete={handleDelete}
                   isDragDisabled={isDragDisabled}
                   onExpandChange={exp => setExpandedCount(c => c + (exp ? 1 : -1))}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -334,13 +338,15 @@ export default function AssetListView({ list, db, onBack, onEdit }: Props) {
       )}
 
       {/* Add modal */}
-      <AddAssetModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        db={db}
-        listId={list.id}
-        onCreated={handleCreated}
-      />
+      {!readOnly && (
+        <AddAssetModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          db={db}
+          listId={list.id}
+          onCreated={handleCreated}
+        />
+      )}
     </div>
   )
 }
@@ -354,6 +360,7 @@ function SortableAssetWrapper({
   onDelete,
   isDragDisabled,
   onExpandChange,
+  readOnly,
 }: {
   asset: Asset
   db: SupabaseClient
@@ -361,6 +368,7 @@ function SortableAssetWrapper({
   onDelete: (id: string) => void
   isDragDisabled: boolean
   onExpandChange: (expanded: boolean) => void
+  readOnly?: boolean
 }) {
   const {
     attributes,
@@ -389,6 +397,7 @@ function SortableAssetWrapper({
         onDelete={onDelete}
         showDragHandle={!isDragDisabled}
         onExpandChange={onExpandChange}
+        readOnly={readOnly}
       />
     </div>
   )

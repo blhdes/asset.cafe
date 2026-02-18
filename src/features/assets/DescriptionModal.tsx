@@ -17,12 +17,13 @@ interface Props {
   asset: Asset
   db: SupabaseClient
   onUpdate: (updated: Asset) => void
+  readOnly?: boolean
 }
 
 const CLOSE_MS = 250
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 
-export default function DescriptionModal({ open, onClose, asset, db, onUpdate }: Props) {
+export default function DescriptionModal({ open, onClose, asset, db, onUpdate, readOnly }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(asset.description ?? '')
   const [saving, setSaving] = useState(false)
@@ -265,13 +266,15 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
 
           <div className="flex items-center gap-2">
             {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
-                className="btn-ghost"
-                style={{ fontSize: '0.8125rem' }}
-              >
-                Edit
-              </button>
+              !readOnly && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="btn-ghost"
+                  style={{ fontSize: '0.8125rem' }}
+                >
+                  Edit
+                </button>
+              )
             ) : (
               <>
                 <button
@@ -320,13 +323,17 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate }:
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    No description yet.{' '}
-                    <button
-                      onClick={() => setEditing(true)}
-                      style={{ color: 'var(--accent)' }}
-                    >
-                      Add one
-                    </button>
+                    No description yet.{!readOnly && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={() => setEditing(true)}
+                          style={{ color: 'var(--accent)' }}
+                        >
+                          Add one
+                        </button>
+                      </>
+                    )}
                   </p>
                 </div>
               )}

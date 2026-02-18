@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import LandingPage from './pages/LandingPage'
 
 const VaultPage = lazy(() => import('./pages/VaultPage'))
+const SharedVaultPage = lazy(() => import('./pages/SharedVaultPage'))
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/vault/:hash" element={<VaultPage />} />
+            <Route path="/shared/:shareHash" element={<SharedVaultPage />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

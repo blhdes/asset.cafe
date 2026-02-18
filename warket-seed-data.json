@@ -1,0 +1,569 @@
+{
+  "version": 1,
+  "app": "warket",
+  "exported_at": "2026-02-14T12:00:00.000Z",
+  "lists": [
+    {
+      "name": "Renewable Energy Leaders",
+      "tags": ["renewables", "ESG", "clean-energy"],
+      "assets": [
+        {
+          "name": "NextEra Energy",
+          "ticker": "NEE",
+          "summary": "World's largest renewable energy company. Provides stable dividends (~3-4%) and acts as a portfolio anchor for clean energy exposure.",
+          "description": "## NextEra Energy (NYSE: NEE)\n\n**The backbone of any clean energy portfolio.**\n\nNextEra is the world's largest generator of renewable energy from wind and solar. Unlike speculative clean energy plays, NEE delivers:\n\n- **Stable dividends** for compounding returns\n- **Massive scale** across wind, solar, and battery storage\n- **Regulated utility income** (Florida Power & Light) that cushions volatility\n\n### Investment thesis\nFor a portfolio under 5,000 EUR, NEE serves as the **stabilizer** — generating income while smaller, higher-risk positions develop. It won't 10x, but it protects capital.\n\n### Key metrics\n- Market: NYSE\n- Sector: Utilities / Renewables\n- Dividend yield: ~3-4% annually",
+          "tags": ["large-cap", "dividends", "stable", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Enlight Renewable Energy",
+          "ticker": "ENLT",
+          "summary": "Expanding wind and solar capacity aggressively in 2025-2026 with a strong ethical governance focus. NASDAQ-listed.",
+          "description": "",
+          "tags": ["wind", "solar", "governance", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "ReNew Energy Global",
+          "ticker": "RNW",
+          "summary": "India's largest decarbonization company, listed on NASDAQ. Best way to access India's green energy boom from a western broker.",
+          "description": "",
+          "tags": ["India", "decarbonization", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Brookfield Renewable Partners",
+          "ticker": "BEP",
+          "summary": "Global portfolio of hydro, wind, and solar assets. Pays ~4-5% annual dividend — ideal for compounding a small capital base.",
+          "description": "## Brookfield Renewable Partners (NYSE: BEP)\n\nOwns and operates hydroelectric dams, wind farms, and solar installations worldwide.\n\n### Why it fits a 5,000 EUR portfolio\n- **4-5% dividend yield** means your money grows passively\n- **Diversified across geographies** and energy types\n- **Lower volatility** than pure-play renewables\n\nThis is the \"sleep well at night\" pick in the clean energy sector.",
+          "tags": ["dividends", "hydro", "diversified", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "iShares Global Clean Energy ETF",
+          "ticker": "ICLN",
+          "summary": "ETF that rotates to include new clean energy winners. Good diversification vehicle for sector exposure without single-stock risk.",
+          "description": "",
+          "tags": ["ETF", "diversified", "NASDAQ"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Energy Technology & Storage",
+      "tags": ["energy-tech", "storage", "grid", "solar"],
+      "assets": [
+        {
+          "name": "First Solar",
+          "ticker": "FSLR",
+          "summary": "US-based solar panel manufacturer with positive balance sheet. Benefits massively from Inflation Reduction Act subsidies.",
+          "description": "## First Solar (NASDAQ: FSLR)\n\n**The real alternative to Chinese solar panels.**\n\nFirst Solar manufactures thin-film solar modules in the US. Key advantages:\n\n- **Profitable** — unlike Meyer Burger, FSLR actually makes money\n- **IRA beneficiary** — receives massive US government subsidies for domestic manufacturing\n- **Supply chain independence** — no reliance on Chinese polysilicon\n\n### vs. Meyer Burger\nMeyer Burger tried to be the European FSLR but couldn't compete on price with Chinese imports. FSLR succeeded because of US policy support and scale.\n\n### Risk\nPolitical — if IRA subsidies are reduced, the thesis weakens significantly.",
+          "tags": ["US-manufacturing", "solar-panels", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Fluence Energy",
+          "ticker": "FLNC",
+          "summary": "Leader in battery energy storage systems and AI-driven grid optimization. 140%+ annual returns. Solves the intermittency problem of renewables.",
+          "description": "## Fluence Energy (NASDAQ: FLNC)\n\nFluence builds the **brain and batteries** for modern power grids. Without storage, renewables can't replace fossil fuels — Fluence solves this.\n\n### Why it matters\n- Global BESS (Battery Energy Storage Systems) market grew **43% in 2025**\n- Fluence provides both hardware (batteries) and software (AI optimization)\n- Revenue growing rapidly with strong backlog\n\n### Performance\n140%+ annual return in recent period — one of the best-performing clean energy stocks.",
+          "tags": ["batteries", "AI", "grid-stability", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Oklo Inc",
+          "ticker": "OKLO",
+          "summary": "Micro-reactor nuclear company backed by Sam Altman (OpenAI). Reuses nuclear waste as fuel. Aligns AI energy demand with clean power.",
+          "description": "## Oklo Inc (NYSE: OKLO)\n\n**Nuclear power reimagined — small, safe, and waste-recycling.**\n\nOklo builds compact fast-fission reactors that run on recycled nuclear waste. Backed by Sam Altman, it sits at the intersection of AI's massive energy needs and clean power generation.\n\n### Bull case\n- AI data centers need **reliable baseload power** that solar/wind can't provide alone\n- Recycling nuclear waste is both ethical and economically attractive\n- Strong backing and political tailwinds for nuclear in 2026\n\n### Bear case\n- Still pre-revenue, regulatory approval timelines uncertain\n- Volatile stock — has swung significantly since listing",
+          "tags": ["nuclear", "micro-reactors", "AI-energy", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Zap Energy",
+          "ticker": "ZAP",
+          "summary": "Nuclear fusion startup rumored for IPO in Q1-Q2 2026 on NASDAQ. Ultimate clean energy — watch for debut, then apply 6-month rule.",
+          "description": "",
+          "tags": ["fusion", "pre-IPO", "watchlist", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Meyer Burger Technology",
+          "ticker": "MBTN",
+          "summary": "CAUTION: European solar manufacturer in severe distress. Cannot compete with Chinese pricing. Heavy dilution, possible zero. Avoid.",
+          "description": "## Meyer Burger (SIX: MBTN) — Cautionary Tale\n\n**Recommendation: AVOID**\n\n### What went wrong\n- **Chinese price war**: China flooded Europe with panels at cost, making European manufacturing uncompetitive\n- **Capital flight**: Attempted US factory relocation but lacks funding\n- **Massive dilution**: Issued so many new shares that existing holdings are nearly worthless\n\n### Lesson\nIn a 5,000 EUR portfolio, you cannot afford \"lottery tickets\" with high probability of going to zero. If you want the same thesis (non-Chinese solar), buy **First Solar (FSLR)** instead — a company that actually generates profit.",
+          "tags": ["high-risk", "European-solar", "SIX", "avoid"],
+          "resources": []
+        },
+        {
+          "name": "Dragonfly Energy",
+          "ticker": "DFLI",
+          "summary": "LiFePO4 battery maker for homes and grids. Non-flammable, recyclable batteries. Key piece of ethical energy transition. Low-cap, volatile.",
+          "description": "",
+          "tags": ["LiFePO4", "home-storage", "low-cap", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Emmvee Photovoltaic",
+          "ticker": "EMMVEE",
+          "summary": "Indian solar module manufacturer. Key player in India's solar expansion. Listed on NSE/BSE, debuted in 2025.",
+          "description": "",
+          "tags": ["India", "solar-manufacturing", "NSE"],
+          "resources": []
+        },
+        {
+          "name": "Fujiyama Power Systems",
+          "ticker": "FUJIYAMA",
+          "summary": "Indian provider of solar energy and storage solutions. Focus on resilient energy infrastructure. Recently listed on BSE.",
+          "description": "",
+          "tags": ["India", "solar", "storage", "BSE"],
+          "resources": []
+        },
+        {
+          "name": "Apollo Power",
+          "ticker": "APLP",
+          "summary": "Israeli developer of unique flexible solar panels. Scaling commercially in international markets in 2025-2026.",
+          "description": "",
+          "tags": ["Israel", "flexible-solar", "TASE"],
+          "resources": []
+        },
+        {
+          "name": "Tenneco Clean Air",
+          "ticker": "TENNECO",
+          "summary": "Indian company specialized in emissions reduction and air quality technology. Direct bet on industrial transition.",
+          "description": "",
+          "tags": ["India", "emissions", "clean-air", "NSE"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Ethical Fintech & Neobanks",
+      "tags": ["fintech", "banking", "social-impact", "ESG"],
+      "assets": [
+        {
+          "name": "Nubank",
+          "ticker": "NU",
+          "summary": "Largest ethical fintech in emerging markets (Brazil, Mexico). Profitable, Buffett-backed. Best Chime alternative available today.",
+          "description": "## Nubank (NYSE: NU)\n\n**The ethical bank for Latin America's unbanked.**\n\nNubank was created to give millions of Brazilians and Mexicans access to fair banking — no abusive fees, no branch-only service. Today it's the world's largest digital bank by customers.\n\n### Why it stands out\n- **Profitable** — unlike most fintechs, NU makes money\n- **Warren Buffett invested** — a strong vote of confidence\n- **Social impact** — bancarized millions who were ignored by traditional banks\n- **Less risky than IPO fintechs** — already public and proven\n\n### For a 5,000 EUR portfolio\nIf you want Chime-like exposure today (without waiting for post-IPO stabilization), NU is the strongest option.",
+          "tags": ["Brazil", "Mexico", "emerging-markets", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Chime Financial",
+          "ticker": "CHIME",
+          "summary": "US neobank eliminating abusive fees for underserved populations. IPO September 2025. Approaching the 6-month post-IPO window.",
+          "description": "",
+          "tags": ["neobank", "no-fees", "IPO-2025", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Klarna",
+          "ticker": "KLAR",
+          "summary": "Swedish BNPL leader. IPO September 2025 focused on fair commerce and ethical AI integration in financial services.",
+          "description": "",
+          "tags": ["BNPL", "AI", "IPO-2025", "Sweden", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "SoFi Technologies",
+          "ticker": "SOFI",
+          "summary": "Digital bank helping young people escape debt and start investing consciously. Full banking platform with financial education focus.",
+          "description": "",
+          "tags": ["digital-banking", "student-loans", "high-volatility", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Wise",
+          "ticker": "WISE",
+          "summary": "Transparent international transfers with minimal fees. Clear ethical mission against hidden bank charges. London Stock Exchange.",
+          "description": "",
+          "tags": ["transfers", "London", "LSE", "low-fees"],
+          "resources": []
+        },
+        {
+          "name": "Revolut",
+          "ticker": "REVOLUT",
+          "summary": "European fintech giant valued at $75B after UK banking license. Expected IPO late 2026. Multi-currency, sustainable investing features.",
+          "description": "",
+          "tags": ["pre-IPO", "watchlist", "Europe", "multi-currency"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Quantum Computing",
+      "tags": ["quantum", "deep-tech", "computing"],
+      "assets": [
+        {
+          "name": "IonQ",
+          "ticker": "IONQ",
+          "summary": "Leading quantum computer maker using trapped-ion technology. Partnerships with AWS, Google Cloud, Azure. Strongest balance sheet in quantum sector.",
+          "description": "## IonQ (NYSE: IONQ)\n\n**The quantum company with the most cash to survive the long R&D road.**\n\nIonQ uses trapped-ion technology, which many physicists consider more stable than superconducting qubits (Rigetti's approach).\n\n### Competitive advantages\n- Integrated into **Amazon Braket, Google Cloud, and Microsoft Azure**\n- More cash on hand than peers — can sustain years of development\n- Technology allows for higher qubit fidelity\n\n### Price action\nHas corrected significantly from its post-IPO highs, now in a \"value discovery\" zone for patient investors.\n\n### Risk\nLike all quantum companies: pre-revenue, timeline to commercialization is uncertain, and the field could consolidate.",
+          "tags": ["ion-traps", "cloud-partnerships", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "D-Wave Quantum",
+          "ticker": "QBTS",
+          "summary": "Quantum annealing specialist with real commercial use today (Volkswagen, Mastercard). More practical short-term application than gate-based quantum.",
+          "description": "",
+          "tags": ["annealing", "commercial-applications", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Rigetti Computing",
+          "ticker": "RGTI",
+          "summary": "Superconducting qubit quantum computers. Highly volatile, speculative. Interesting technology but high cash burn rate.",
+          "description": "",
+          "tags": ["superconducting", "volatile", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Quantum Computing Inc",
+          "ticker": "QUBT",
+          "summary": "Photonic quantum computing — uses light instead of extreme cold. Lower energy consumption, more scalable. Very low cap (~$1.20), high daily swings.",
+          "description": "",
+          "tags": ["photonic", "low-cap", "green-quantum", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Archer Materials",
+          "ticker": "AXE",
+          "summary": "Developing room-temperature quantum chip for mobile devices. Australian-listed. Revolutionary if successful — quantum in your pocket.",
+          "description": "",
+          "tags": ["room-temperature", "mobile-quantum", "ASX"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "AI & Digital Engineering",
+      "tags": ["AI", "software", "consulting", "digital"],
+      "assets": [
+        {
+          "name": "Grid Dynamics",
+          "ticker": "GDYN",
+          "summary": "Digital engineering and AI consultancy. Sells 'picks and shovels' to enterprises for digital transformation. Listed on NASDAQ since 2019.",
+          "description": "",
+          "tags": ["digital-transformation", "data", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "EPAM Systems",
+          "ticker": "EPAM",
+          "summary": "Global leader in complex software engineering and AI. Grid Dynamics' bigger sibling. Completed post-Ukraine restructuring — attractive valuation in 2026.",
+          "description": "",
+          "tags": ["enterprise-software", "global", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Globant",
+          "ticker": "GLOB",
+          "summary": "Argentinian-origin innovation firm working with Disney, Google on AI and industrial metaverse. Conscious talent-first culture.",
+          "description": "",
+          "tags": ["Argentina", "innovation", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Accenture",
+          "ticker": "ACN",
+          "summary": "The conservative giant of tech consulting. Stable dividends, massive scale. The safe anchor in the digital services sector.",
+          "description": "",
+          "tags": ["large-cap", "stable", "dividends", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Evolv Technologies",
+          "ticker": "EVLV",
+          "summary": "AI-powered contactless security scanning. Recurring revenue model. Analysts project significant growth toward end of 2026.",
+          "description": "",
+          "tags": ["AI-security", "scanning", "low-cap", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Verra Mobility",
+          "ticker": "VRRM",
+          "summary": "Smart city tech for traffic safety and optimization. Ethical infrastructure play reducing accidents and emissions.",
+          "description": "",
+          "tags": ["smart-cities", "traffic", "infrastructure", "NASDAQ"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "EdTech & Social Impact",
+      "tags": ["edtech", "education", "social-impact"],
+      "assets": [
+        {
+          "name": "Duolingo",
+          "ticker": "DUOL",
+          "summary": "Democratizing language education globally. AI integration in 2025 transformed the model. Conscious mission with strong growth.",
+          "description": "",
+          "tags": ["languages", "AI-integration", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Coursera",
+          "ticker": "COUR",
+          "summary": "Global access to university education at minimal cost. Price stabilized after AI bubble correction in 2025. Social impact at scale.",
+          "description": "",
+          "tags": ["university-access", "global", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "PhysicsWallah",
+          "ticker": "PW",
+          "summary": "Indian EdTech IPO 2025. Mission: democratize high-quality education at affordable prices in developing countries. Listed on NSE.",
+          "description": "",
+          "tags": ["India", "affordable-education", "IPO-2025", "NSE"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Circular Economy & Green Resources",
+      "tags": ["sustainability", "circular-economy", "carbon"],
+      "assets": [
+        {
+          "name": "LanzaTech",
+          "ticker": "LNZA",
+          "summary": "Converts carbon emissions into sustainable fuels. Closed critical deals in 2025 for direct-impact business model. In a 'second youth' phase.",
+          "description": "",
+          "tags": ["carbon-to-fuel", "emissions", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "DevvStream",
+          "ticker": "DEVS",
+          "summary": "High-integrity carbon credit generation. Helps companies reach net-zero transparently using blockchain-verified credits.",
+          "description": "",
+          "tags": ["carbon-credits", "net-zero", "blockchain", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Biopol Chemicals",
+          "ticker": "BIOPOL",
+          "summary": "Indian company producing sustainable biodegradable chemicals. IPO February 2026. Apply 6-month rule — evaluate in August 2026.",
+          "description": "",
+          "tags": ["India", "biodegradable", "IPO-2026", "NSE"],
+          "resources": []
+        },
+        {
+          "name": "Select Water Solutions",
+          "ticker": "WTTR",
+          "summary": "Sustainable water management specialist. Growing sector importance due to regulation and climate. 25%+ annual earnings growth projected.",
+          "description": "",
+          "tags": ["water-management", "ESG", "NYSE"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Asia Bridge Investments",
+      "tags": ["emerging-markets", "India", "China", "ADR"],
+      "assets": [
+        {
+          "name": "MakeMyTrip",
+          "ticker": "MMYT",
+          "summary": "India's leading online travel agency, listed on NASDAQ. Direct bet on India's growing middle class and domestic travel boom.",
+          "description": "",
+          "tags": ["India", "travel", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "HDFC Bank",
+          "ticker": "HDB",
+          "summary": "India's largest private bank via NYSE ADR. Purest way to invest in Indian consumer lending and economic growth from a western broker.",
+          "description": "",
+          "tags": ["India", "banking", "ADR", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "LG Electronics India",
+          "ticker": "LGEINDIA",
+          "summary": "IPO October 2025 on NSE India. Energy solutions and EV components division is the growth driver. April 2026 marks 6-month window.",
+          "description": "",
+          "tags": ["India", "EV-components", "IPO-2025", "NSE"],
+          "resources": []
+        },
+        {
+          "name": "Alibaba Group",
+          "ticker": "BABA",
+          "summary": "Chinese e-commerce and cloud giant at historically low valuations. Near potential 'floor' pricing. High risk from regulatory environment.",
+          "description": "## Alibaba (NYSE: BABA)\n\n**China's digital backbone — at a deep discount.**\n\nAlibaba powers e-commerce, cloud computing, and digital payments across China. Currently trading at historically low valuations due to:\n\n- **Regulatory crackdowns** on tech giants in China\n- **US-China geopolitical tensions** creating delisting fears\n- **Slowing Chinese consumer spending**\n\n### Why consider it\n- Price-to-earnings ratio is at multi-year lows\n- Cloud business (Aliyun) is growing independently\n- Any regulatory easing could trigger significant upside\n\n### Risk\nPolitical risk is the dominant factor — this is not a pure business analysis play. Only suitable for investors who accept the China governance discount.",
+          "tags": ["China", "cloud", "e-commerce", "deep-value", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "PDD Holdings",
+          "ticker": "PDD",
+          "summary": "Parent of Temu. Chinese manufacturing efficiency meets global consumer expansion. Growth depends on western market penetration.",
+          "description": "",
+          "tags": ["China", "Temu", "e-commerce", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Li Auto",
+          "ticker": "LI",
+          "summary": "One of China's financially healthiest EV makers. Listed on NASDAQ, connecting Chinese EV innovation with US capital markets.",
+          "description": "",
+          "tags": ["China", "EV", "clean-mobility", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Apple",
+          "ticker": "AAPL",
+          "summary": "US proxy for Asia: China is its largest growth market and primary manufacturing base. If Asia thrives, Apple benefits.",
+          "description": "",
+          "tags": ["US-proxy", "China-manufacturing", "large-cap", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Applied Materials",
+          "ticker": "AMAT",
+          "summary": "Supplies chip fabrication machinery to all of Asia. Deep tech link — if semiconductor demand in Asia grows, AMAT profits.",
+          "description": "",
+          "tags": ["US-proxy", "chip-equipment", "deep-tech", "NASDAQ"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Frontier Tech & Hardware",
+      "tags": ["hardware", "innovation", "deep-tech"],
+      "assets": [
+        {
+          "name": "ASML Holding",
+          "ticker": "ASML",
+          "summary": "The only company that makes EUV lithography machines for advanced chips. Without ASML, no AI chips exist. Expensive — use fractional shares.",
+          "description": "## ASML (NASDAQ/Euronext: ASML)\n\n**The ethical monopoly that enables all modern technology.**\n\nASML is the sole manufacturer of extreme ultraviolet (EUV) lithography machines — the equipment needed to produce the most advanced semiconductors. Every AI chip from NVIDIA, every iPhone processor, every quantum computing advance depends on ASML's machines.\n\n### Why \"ethical monopoly\"\n- They don't exploit their position with predatory pricing\n- Their technology enables the entire digital economy\n- Strong ESG practices and Dutch governance standards\n\n### For a 5,000 EUR portfolio\nAt hundreds of euros per share, use **fractional shares** on IBKR to allocate ~500 EUR. This gives exposure to the deepest moat in all of technology.",
+          "tags": ["semiconductors", "monopoly", "Euronext", "NASDAQ"],
+          "resources": []
+        },
+        {
+          "name": "Joby Aviation",
+          "ticker": "JOBY",
+          "summary": "Electric vertical takeoff aircraft (eVTOL). Aims to eliminate urban traffic and pollution with electric air taxis. High innovation, pre-revenue.",
+          "description": "",
+          "tags": ["eVTOL", "electric-flight", "urban-mobility", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Desktop Metal",
+          "ticker": "DM",
+          "summary": "Industrial 3D metal printing at scale. Vision: eliminate wasteful global supply chains with local zero-waste manufacturing. ~$0.60, high risk.",
+          "description": "",
+          "tags": ["3D-printing", "manufacturing", "low-cap", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Astra Space",
+          "ticker": "ASTR",
+          "summary": "Small satellite launch democratization. Goal: daily launches for global connectivity and climate monitoring. ~$1.00, very volatile post-restructuring.",
+          "description": "",
+          "tags": ["space", "small-satellites", "connectivity", "NASDAQ"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Industrial Metals & Commodities",
+      "tags": ["commodities", "metals", "copper", "mining"],
+      "assets": [
+        {
+          "name": "Freeport-McMoRan",
+          "ticker": "FCX",
+          "summary": "World's top copper producer. Improving ESG scores. Copper is 88-90% of bronze — best proxy for bronze/copper price exposure.",
+          "description": "",
+          "tags": ["copper", "mining", "ESG", "NYSE"],
+          "resources": []
+        },
+        {
+          "name": "Rio Tinto",
+          "ticker": "RIO",
+          "summary": "Diversified mining giant (copper, tin, aluminum). Listed as ADR on NYSE and on LSE. Key supplier of bronze components for EV and marine infrastructure.",
+          "description": "",
+          "tags": ["copper", "tin", "diversified", "NYSE", "LSE"],
+          "resources": []
+        },
+        {
+          "name": "United States Copper Index Fund",
+          "ticker": "CPER",
+          "summary": "ETF tracking copper futures. Most direct way to bet on copper price without buying mining stocks. Bronze is ~90% copper.",
+          "description": "",
+          "tags": ["ETF", "copper-futures", "direct-exposure"],
+          "resources": []
+        },
+        {
+          "name": "Global X Copper Miners ETF",
+          "ticker": "COPX",
+          "summary": "ETF investing in copper mining companies globally. Diversified mining exposure without single-stock risk.",
+          "description": "",
+          "tags": ["ETF", "miners", "diversified"],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "name": "Spanish Market (BME)",
+      "tags": ["Spain", "BME", "euro-denominated"],
+      "assets": [
+        {
+          "name": "Indra Sistemas / Minsait",
+          "ticker": "IDR",
+          "summary": "Spain's main tech company. Minsait division does AI, digital consulting, and government IT — the 'Grid Dynamics of Spain'. Low commissions, no FX risk.",
+          "description": "## Indra (BME: IDR)\n\n**The Spanish tech anchor — AI, defense, and digital consulting.**\n\nThrough its **Minsait** division, Indra does exactly what Grid Dynamics does internationally: digital transformation, AI consulting, and data engineering for large enterprises and governments.\n\n### Advantages for a Spanish investor\n- **BME listing** = lowest commissions on IBKR\n- **EUR denominated** = zero currency exchange risk\n- **Diversified** across defense, transport, energy, and finance\n- **Government contracts** provide revenue stability\n\n### Comparison\n| Metric | Indra | Grid Dynamics |\n|--------|-------|---------------|\n| Revenue | ~$5.1B | ~$410M |\n| Market | BME (Spain) | NASDAQ (US) |\n| Stability | Higher | Lower |\n| Growth potential | Moderate | Higher |",
+          "tags": ["AI", "defense", "consulting", "Minsait"],
+          "resources": []
+        },
+        {
+          "name": "Making Science",
+          "ticker": "MAKS",
+          "summary": "BME Growth-listed small cap. Data and AI applied to marketing and e-commerce. Higher growth potential (and risk) than Indra.",
+          "description": "",
+          "tags": ["marketing", "data", "small-cap", "BME-Growth"],
+          "resources": []
+        },
+        {
+          "name": "Solaria Energía",
+          "ticker": "SLR",
+          "summary": "Spanish solar photovoltaic developer. At historically low valuations after difficult 2025. No FX risk, part of Ibex ESG index.",
+          "description": "",
+          "tags": ["solar", "renewables", "Ibex-ESG"],
+          "resources": []
+        },
+        {
+          "name": "Grenergy Renovables",
+          "ticker": "GRE",
+          "summary": "Spanish small cap with high trading volume. Develops solar and wind parks across Europe and Latin America. Ibex ESG index member.",
+          "description": "",
+          "tags": ["solar", "wind", "LatAm", "Ibex-ESG"],
+          "resources": []
+        },
+        {
+          "name": "Ecoener",
+          "ticker": "ENER",
+          "summary": "Galician renewables company (hydro, wind, solar). Integrated management model valued for growth potential on the Mercado Continuo.",
+          "description": "",
+          "tags": ["hydro", "wind", "solar", "Galicia"],
+          "resources": []
+        },
+        {
+          "name": "Oryzon Genomics",
+          "ticker": "ORY",
+          "summary": "Spanish biotech working on epigenetic therapies. Analysts project 100%+ revaluation potential. High risk / high reward in healthcare innovation.",
+          "description": "",
+          "tags": ["biotech", "epigenetics", "high-risk"],
+          "resources": []
+        },
+        {
+          "name": "Amadeus IT Group",
+          "ticker": "AMS",
+          "summary": "Global travel technology and data management. Appears travel-specific but is fundamentally a massive data processing company.",
+          "description": "",
+          "tags": ["travel-tech", "data", "large-cap"],
+          "resources": []
+        }
+      ]
+    }
+  ]
+}
