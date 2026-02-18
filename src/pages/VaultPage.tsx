@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router'
-import { vaultClient } from '../lib/supabase'
+import { getSupabase, vaultClient } from '../lib/supabase'
+import { deriveShareHash } from '../features/auth/seedPhrase'
+import { exportVault, importVault, validateImportData } from '../lib/vaultExport'
+import { toast } from '../components/Toast'
 import ToastContainer from '../components/Toast'
 import ListsView from '../features/lists/ListsView'
 import Logo from '../components/Logo'
@@ -12,6 +15,7 @@ export default function VaultPage() {
   const [supabaseError, setSupabaseError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [listKey, setListKey] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const storedHash = sessionStorage.getItem('vault_hash')
 
@@ -46,6 +50,60 @@ export default function VaultPage() {
     navigate('/', { replace: true })
   }
 
+  const handleExport = async () => {
+    if (!db) return
+    try {
+      const result = await exportVault(db, hash)
+      toast(`Exported ${result.listsExported} lists, ${result.assetsExported} assets`, 'success')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Export failed')
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      const shareHash = await deriveShareHash(hash)
+      const supabase = getSupabase()
+      const { error } = await supabase
+        .from('vault_shares')
+        .upsert({ vault_hash: hash, share_hash: shareHash }, { onConflict: 'vault_hash' })
+
+      if (error) { toast(error.message); return }
+
+      await navigator.clipboard.writeText(shareHash)
+      toast('Share key copied to clipboard', 'success')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Failed to generate share key')
+    }
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !db) return
+    e.target.value = ''
+
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+
+      const validation = validateImportData(data)
+      if (!validation.valid) {
+        toast(validation.error ?? 'Invalid file')
+        return
+      }
+
+      const result = await importVault(db, hash, data)
+      toast(`Imported ${result.listsImported} lists, ${result.assetsImported} assets`, 'success')
+      setListKey(k => k + 1)
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        toast('Invalid JSON file')
+      } else {
+        toast(e instanceof Error ? e.message : 'Import failed')
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--surface-0)' }}>
       <div className="decorative-bg" />
@@ -59,7 +117,7 @@ export default function VaultPage() {
           WebkitBackdropFilter: 'blur(12px)',
         }}
       >
-        <div className="mx-auto flex h-14 items-center justify-between px-4" style={{ maxWidth: '960px' }}>
+        <div className="mx-auto flex h-14 items-center justify-between px-4" style={{ maxWidth: '1400px' }}>
           <button
             onClick={() => setListKey(k => k + 1)}
             className="flex items-center gap-2 text-lg"
@@ -105,6 +163,49 @@ export default function VaultPage() {
               </svg>
             </button>
 
+            {/* Import */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="theme-toggle"
+              title="Import vault"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z" />
+                <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+              </svg>
+            </button>
+
+            {/* Export */}
+            <button
+              onClick={handleExport}
+              className="theme-toggle"
+              title="Export vault"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+              </svg>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              className="theme-toggle"
+              title="Share vault (read-only)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+                <path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+              </svg>
+            </button>
+
             <ThemeToggle />
 
             {/* Lock button */}
@@ -131,7 +232,7 @@ export default function VaultPage() {
       </header>
 
       {/* Content */}
-      <main className="mx-auto px-4 py-6" style={{ maxWidth: '960px' }}>
+      <main className="mx-auto px-4 py-6" style={{ maxWidth: '1400px' }}>
         {supabaseError ? (
           <div
             className="p-6 text-center"

@@ -31,9 +31,10 @@ type ListWithCount = VaultList & { asset_count: number }
 interface Props {
   db: SupabaseClient
   vaultHash: string
+  readOnly?: boolean
 }
 
-export default function ListsView({ db, vaultHash }: Props) {
+export default function ListsView({ db, vaultHash, readOnly }: Props) {
   const [lists, setLists] = useState<ListWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -50,27 +51,47 @@ export default function ListsView({ db, vaultHash }: Props) {
     useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
   )
 
+  /* ── Asset search index (lightweight: name + ticker per list) */
+  const [assetIndex, setAssetIndex] = useState<Map<string, { name: string; ticker: string }[]>>(new Map())
+
   /* ── Fetch ─────────────────────────────────────────────── */
   const fetchLists = useCallback(async () => {
-    const { data, error } = await db
+    const listRes = await db
       .from('lists')
       .select('*, assets(count)')
       .eq('vault_hash', vaultHash)
       .order('position', { ascending: true })
 
-    if (error) {
-      toast(error.message)
+    if (listRes.error) {
+      toast(listRes.error.message)
       setLoading(false)
       return
     }
 
-    const mapped = (data ?? []).map((row: any) => ({
+    const mapped = (listRes.data ?? []).map((row: any) => ({
       ...row,
       asset_count: row.assets?.[0]?.count ?? 0,
     }))
 
     setLists(mapped)
     setLoading(false)
+
+    // Fetch lightweight asset index for search (non-blocking)
+    const listIds = mapped.map((l: any) => l.id)
+    if (listIds.length > 0) {
+      const assetRes = await db
+        .from('assets')
+        .select('list_id, name, ticker')
+        .in('list_id', listIds)
+
+      const idx = new Map<string, { name: string; ticker: string }[]>()
+      for (const a of (assetRes.data ?? []) as { list_id: string; name: string; ticker: string }[]) {
+        const arr = idx.get(a.list_id) ?? []
+        arr.push({ name: a.name, ticker: a.ticker })
+        idx.set(a.list_id, arr)
+      }
+      setAssetIndex(idx)
+    }
   }, [db, vaultHash])
 
   useEffect(() => { fetchLists() }, [fetchLists])
@@ -82,19 +103,23 @@ export default function ListsView({ db, vaultHash }: Props) {
     return Array.from(set).sort()
   }, [lists])
 
-  const isFiltered = Boolean(search || activeTag)
+  const isFiltered = Boolean(search || activeTag || readOnly)
 
   const filtered = useMemo(() => {
     let result = lists
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter(l => l.name.toLowerCase().includes(q))
+      result = result.filter(l => {
+        if (l.name.toLowerCase().includes(q)) return true
+        const assets = assetIndex.get(l.id) ?? []
+        return assets.some(a => a.name.toLowerCase().includes(q) || a.ticker.toLowerCase().includes(q))
+      })
     }
     if (activeTag) {
       result = result.filter(l => l.tags?.includes(activeTag))
     }
     return result
-  }, [lists, search, activeTag])
+  }, [lists, search, activeTag, assetIndex])
 
   /* ── Create ────────────────────────────────────────────── */
   const handleCreate = async (name: string, tags: string[]) => {
@@ -186,18 +211,21 @@ export default function ListsView({ db, vaultHash }: Props) {
           list={selectedList}
           db={db}
           onBack={() => { setViewDirection('back'); setSelectedList(null); fetchLists() }}
-          onEdit={() => {
+          onEdit={readOnly ? undefined : () => {
             const full = lists.find(l => l.id === selectedList.id)
             if (full) setEditingList(full)
           }}
+          readOnly={readOnly}
         />
-        <EditListModal
-          open={editingList !== null && selectedList !== null}
-          onClose={() => setEditingList(null)}
-          list={editingList}
-          onSave={handleUpdateList}
-          onDelete={handleDelete}
-        />
+        {!readOnly && (
+          <EditListModal
+            open={editingList !== null && selectedList !== null}
+            onClose={() => setEditingList(null)}
+            list={editingList}
+            onSave={handleUpdateList}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
     )
   }
@@ -210,15 +238,17 @@ export default function ListsView({ db, vaultHash }: Props) {
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search lists..."
+          placeholder="Search lists, assets, tickers..."
           className="input-field sm:max-w-[256px]"
         />
-        <button
-          onClick={() => setModalOpen(true)}
-          className="btn-primary shrink-0"
-        >
-          + New List
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="btn-primary shrink-0"
+          >
+            + New List
+          </button>
+        )}
       </div>
 
       {/* Tag pills */}
@@ -251,7 +281,7 @@ export default function ListsView({ db, vaultHash }: Props) {
 
       {/* Loading */}
       {loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <ListCardSkeleton key={i} />
           ))}
@@ -286,10 +316,10 @@ export default function ListsView({ db, vaultHash }: Props) {
           </svg>
           <p style={{ color: 'var(--text-tertiary)' }} className="text-sm">
             {lists.length === 0
-              ? 'No lists yet. Create your first one.'
+              ? (readOnly ? 'This vault has no lists.' : 'No lists yet. Create your first one.')
               : 'No lists match your search.'}
           </p>
-          {lists.length === 0 && (
+          {lists.length === 0 && !readOnly && (
             <button
               onClick={() => setModalOpen(true)}
               className="btn-primary mt-4"
@@ -313,7 +343,7 @@ export default function ListsView({ db, vaultHash }: Props) {
             strategy={rectSortingStrategy}
             disabled={isFiltered}
           >
-            <div className={`grid gap-5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 ${activeDragId ? 'is-dragging' : ''}`}>
+            <div className={`grid gap-5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${activeDragId ? 'is-dragging' : ''}`}>
               {filtered.map(list => (
                 <SortableListCard
                   key={list.id}
@@ -321,6 +351,7 @@ export default function ListsView({ db, vaultHash }: Props) {
                   onSelect={() => { setViewDirection('forward'); setSelectedList(list) }}
                   onEdit={() => setEditingList(list)}
                   isDragDisabled={isFiltered}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -339,20 +370,22 @@ export default function ListsView({ db, vaultHash }: Props) {
       )}
 
       {/* Create modal */}
-      <CreateListModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreate={handleCreate}
-      />
-
-      {/* Edit modal */}
-      <EditListModal
-        open={editingList !== null && selectedList === null}
-        onClose={() => setEditingList(null)}
-        list={editingList}
-        onSave={handleUpdateList}
-        onDelete={handleDelete}
-      />
+      {!readOnly && (
+        <>
+          <CreateListModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onCreate={handleCreate}
+          />
+          <EditListModal
+            open={editingList !== null && selectedList === null}
+            onClose={() => setEditingList(null)}
+            list={editingList}
+            onSave={handleUpdateList}
+            onDelete={handleDelete}
+          />
+        </>
+      )}
     </div>
   )
 }
@@ -417,11 +450,13 @@ function SortableListCard({
   onSelect,
   onEdit,
   isDragDisabled,
+  readOnly,
 }: {
   list: ListWithCount
   onSelect: () => void
   onEdit: () => void
   isDragDisabled: boolean
+  readOnly?: boolean
 }) {
   const {
     attributes,
@@ -459,22 +494,24 @@ function SortableListCard({
       )}
 
       {/* Edit button */}
-      <button
-        onClick={e => {
-          e.stopPropagation()
-          onEdit()
-        }}
-        className="absolute right-3 top-3 rounded p-1 opacity-0 transition-all group-hover:opacity-100"
-        style={{ color: 'var(--text-muted)' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}
-        title="Edit list"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-          <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
-          <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25h5.5a.75.75 0 0 0 0-1.5h-5.5A2.75 2.75 0 0 0 2 5.75v8.5A2.75 2.75 0 0 0 4.75 17h8.5A2.75 2.75 0 0 0 16 14.25v-5.5a.75.75 0 0 0-1.5 0v5.5c0 .69-.56 1.25-1.25 1.25h-8.5c-.69 0-1.25-.56-1.25-1.25v-8.5Z" />
-        </svg>
-      </button>
+      {!readOnly && (
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            onEdit()
+          }}
+          className="absolute right-3 top-3 rounded p-1 opacity-0 transition-all group-hover:opacity-100"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}
+          title="Edit list"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+            <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25h5.5a.75.75 0 0 0 0-1.5h-5.5A2.75 2.75 0 0 0 2 5.75v8.5A2.75 2.75 0 0 0 4.75 17h8.5A2.75 2.75 0 0 0 16 14.25v-5.5a.75.75 0 0 0-1.5 0v5.5c0 .69-.56 1.25-1.25 1.25h-8.5c-.69 0-1.25-.56-1.25-1.25v-8.5Z" />
+          </svg>
+        </button>
+      )}
 
       <ListCardContent list={list} />
     </div>

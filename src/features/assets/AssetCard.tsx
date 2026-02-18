@@ -61,9 +61,10 @@ interface Props {
   onDelete: (id: string) => void
   showDragHandle?: boolean
   onExpandChange?: (expanded: boolean) => void
+  readOnly?: boolean
 }
 
-export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandle, onExpandChange }: Props) {
+export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandle, onExpandChange, readOnly }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   const toggleExpanded = () => {
@@ -208,9 +209,9 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
         <span
           className="ticker-badge"
           style={{ background: asset.image_url ? 'none' : tickerGradient(asset.ticker) }}
-          onMouseEnter={() => setBadgeHovered(true)}
-          onMouseLeave={() => setBadgeHovered(false)}
-          onClick={expanded ? (e) => { e.stopPropagation(); setImageModalOpen(true) } : undefined}
+          onMouseEnter={readOnly ? undefined : () => setBadgeHovered(true)}
+          onMouseLeave={readOnly ? undefined : () => setBadgeHovered(false)}
+          onClick={expanded && !readOnly ? (e) => { e.stopPropagation(); setImageModalOpen(true) } : undefined}
         >
           {asset.image_url ? (
             <img
@@ -348,7 +349,7 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
             <div>
               <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
                 <h4 className="label-sm" style={{ margin: 0 }}>Summary</h4>
-                {!editingSummary && asset.summary && (
+                {!readOnly && !editingSummary && asset.summary && (
                   <button
                     onClick={() => { setEditingSummary(true); setSummaryDraft(asset.summary || '') }}
                     className="btn-ghost p-0.5"
@@ -390,6 +391,8 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
                   {asset.summary}
                 </p>
+              ) : readOnly ? (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>No summary.</p>
               ) : (
                 <button
                   onClick={() => { setEditingSummary(true); setSummaryDraft('') }}
@@ -404,13 +407,17 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
             {/* Description */}
             <div>
               <h4 className="label-sm" style={{ marginBottom: 4 }}>Description</h4>
-              <button
-                onClick={() => setDescModalOpen(true)}
-                className="btn-ghost"
-                style={{ fontSize: '0.75rem' }}
-              >
-                {asset.description ? 'View / Edit' : '+ Add Description'}
-              </button>
+              {readOnly && !asset.description ? (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0 }}>No description.</p>
+              ) : (
+                <button
+                  onClick={() => setDescModalOpen(true)}
+                  className="btn-ghost"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  {asset.description ? (readOnly ? 'View' : 'View / Edit') : '+ Add Description'}
+                </button>
+              )}
             </div>
 
             {/* Resources */}
@@ -420,129 +427,156 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
               </h4>
 
               {resources.length > 0 ? (
-                <DndContext
-                  sensors={resourceSensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={(e: DragStartEvent) => setActiveDragResourceId(e.active.id as string)}
-                  onDragEnd={handleReorderResources}
-                >
-                  <SortableContext
-                    items={resources.map((_, i) => `resource-${i}`)}
-                    strategy={verticalListSortingStrategy}
+                readOnly ? (
+                  <div className="space-y-0.5 mb-3">
+                    {resources.map((resource, i) => (
+                      <ResourceRow
+                        key={`${resource.url}-${i}`}
+                        resource={resource}
+                        onRemove={() => {}}
+                        readOnly
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <DndContext
+                    sensors={resourceSensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={(e: DragStartEvent) => setActiveDragResourceId(e.active.id as string)}
+                    onDragEnd={handleReorderResources}
                   >
-                    <div className="space-y-0.5 mb-3">
-                      {resources.map((resource, i) => (
-                        <SortableResourceRow
-                          key={`${resource.url}-${i}`}
-                          id={`resource-${i}`}
-                          resource={resource}
-                          onRemove={() => handleRemoveResource(i)}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                  {createPortal(
-                    <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
-                      {activeDragResourceId !== null ? (() => {
-                        const idx = parseInt(activeDragResourceId.replace('resource-', ''))
-                        const r = resources[idx]
-                        return r ? (
-                          <div
-                            className="drag-overlay"
-                            style={{
-                              background: 'var(--surface-1)',
-                              padding: '6px 8px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              fontSize: '0.875rem',
-                              color: 'var(--text-secondary)',
-                            }}
-                          >
-                            {r.title}
-                          </div>
-                        ) : null
-                      })() : null}
-                    </DragOverlay>,
-                    document.body,
-                  )}
-                </DndContext>
+                    <SortableContext
+                      items={resources.map((_, i) => `resource-${i}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-0.5 mb-3">
+                        {resources.map((resource, i) => (
+                          <SortableResourceRow
+                            key={`${resource.url}-${i}`}
+                            id={`resource-${i}`}
+                            resource={resource}
+                            onRemove={() => handleRemoveResource(i)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                    {createPortal(
+                      <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+                        {activeDragResourceId !== null ? (() => {
+                          const idx = parseInt(activeDragResourceId.replace('resource-', ''))
+                          const r = resources[idx]
+                          return r ? (
+                            <div
+                              className="drag-overlay"
+                              style={{
+                                background: 'var(--surface-1)',
+                                padding: '6px 8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontSize: '0.875rem',
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              {r.title}
+                            </div>
+                          ) : null
+                        })() : null}
+                      </DragOverlay>,
+                      document.body,
+                    )}
+                  </DndContext>
+                )
               ) : (
                 <p style={{ marginBottom: 12, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   No resources saved yet.
                 </p>
               )}
 
-              <button
-                onClick={() => setResourceModalOpen(true)}
-                className="btn-ghost"
-                style={{ fontSize: '0.75rem' }}
-              >
-                + Add Resource
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => setResourceModalOpen(true)}
+                  className="btn-ghost"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  + Add Resource
+                </button>
+              )}
             </div>
 
             {/* Tags */}
             <div>
               <h4 className="label-sm" style={{ marginBottom: 8 }}>Tags</h4>
               <div className="flex flex-wrap items-center gap-1.5">
-                {(asset.tags ?? []).map(tag => (
-                  <TagPill key={tag} tag={tag} onRemove={() => handleRemoveTag(tag)} />
-                ))}
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag() } }}
-                    placeholder="add tag"
-                    className="input-field"
-                    style={{
-                      width: '5rem',
-                      fontSize: '0.75rem',
-                      padding: '4px 8px',
-                    }}
-                  />
-                </div>
+                {readOnly ? (
+                  (asset.tags ?? []).length > 0
+                    ? (asset.tags ?? []).map(tag => (
+                        <span key={tag} className="tag-display">{tag}</span>
+                      ))
+                    : <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No tags.</span>
+                ) : (
+                  <>
+                    {(asset.tags ?? []).map(tag => (
+                      <TagPill key={tag} tag={tag} onRemove={() => handleRemoveTag(tag)} />
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={e => setTagInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag() } }}
+                        placeholder="add tag"
+                        className="input-field"
+                        style={{
+                          width: '5rem',
+                          fontSize: '0.75rem',
+                          padding: '4px 8px',
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Delete */}
-            <div
-              className="flex justify-end"
-              style={{
-                paddingTop: 8,
-                borderTop: '1px solid var(--border-default)',
-              }}
-            >
-              {confirmDelete ? (
-                <div className="flex items-center gap-2 animate-fade-in">
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                    Delete this asset?
-                  </span>
-                  <button
-                    onClick={handleDelete}
-                    className="btn-primary"
-                    style={{
-                      fontSize: '0.75rem',
-                      padding: '4px 12px',
-                      backgroundColor: 'var(--error)',
-                    }}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="btn-ghost"
-                    style={{ fontSize: '0.75rem', padding: '4px 12px' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <DeleteTextButton onClick={() => setConfirmDelete(true)} />
-              )}
-            </div>
+            {!readOnly && (
+              <div
+                className="flex justify-end"
+                style={{
+                  paddingTop: 8,
+                  borderTop: '1px solid var(--border-default)',
+                }}
+              >
+                {confirmDelete ? (
+                  <div className="flex items-center gap-2 animate-fade-in">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                      Delete this asset?
+                    </span>
+                    <button
+                      onClick={handleDelete}
+                      className="btn-primary"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '4px 12px',
+                        backgroundColor: 'var(--error)',
+                      }}
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="btn-ghost"
+                      style={{ fontSize: '0.75rem', padding: '4px 12px' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <DeleteTextButton onClick={() => setConfirmDelete(true)} />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -555,20 +589,25 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
       asset={asset}
       db={db}
       onUpdate={onUpdate}
+      readOnly={readOnly}
     />
-    <AddResourceModal
-      open={resourceModalOpen}
-      onClose={() => setResourceModalOpen(false)}
-      asset={asset}
-      db={db}
-      onUpdate={onUpdate}
-    />
-    <ImageUrlModal
-      open={imageModalOpen}
-      onClose={() => setImageModalOpen(false)}
-      currentUrl={asset.image_url}
-      onSave={handleSaveImage}
-    />
+    {!readOnly && (
+      <>
+        <AddResourceModal
+          open={resourceModalOpen}
+          onClose={() => setResourceModalOpen(false)}
+          asset={asset}
+          db={db}
+          onUpdate={onUpdate}
+        />
+        <ImageUrlModal
+          open={imageModalOpen}
+          onClose={() => setImageModalOpen(false)}
+          currentUrl={asset.image_url}
+          onSave={handleSaveImage}
+        />
+      </>
+    )}
     </>
   )
 }
@@ -814,7 +853,7 @@ function SortableResourceRow({
 
 /* ── Resource row component ──────────────────────────────── */
 
-function ResourceRow({ resource, onRemove, showDragHandle }: { resource: Resource; onRemove: () => void; showDragHandle?: boolean }) {
+function ResourceRow({ resource, onRemove, showDragHandle, readOnly }: { resource: Resource; onRemove: () => void; showDragHandle?: boolean; readOnly?: boolean }) {
   const [faviconError, setFaviconError] = useState(false)
   const [rowHovered, setRowHovered] = useState(false)
   const [linkHovered, setLinkHovered] = useState(false)
@@ -888,29 +927,31 @@ function ResourceRow({ resource, onRemove, showDragHandle }: { resource: Resourc
       </svg>
 
       {/* Delete button */}
-      <button
-        onClick={e => { e.preventDefault(); onRemove() }}
-        onMouseEnter={() => setDeleteHovered(true)}
-        onMouseLeave={() => setDeleteHovered(false)}
-        className="shrink-0"
-        title="Remove resource"
-        style={{
-          background: 'none',
-          border: 'none',
-          borderRadius: 'var(--radius-sm)',
-          padding: 2,
-          color: deleteHovered ? 'var(--error)' : 'var(--text-muted)',
-          opacity: rowHovered ? 1 : 0,
-          transition: 'opacity 150ms var(--ease-out), color 150ms var(--ease-out)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
-          <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
-        </svg>
-      </button>
+      {!readOnly && (
+        <button
+          onClick={e => { e.preventDefault(); onRemove() }}
+          onMouseEnter={() => setDeleteHovered(true)}
+          onMouseLeave={() => setDeleteHovered(false)}
+          className="shrink-0"
+          title="Remove resource"
+          style={{
+            background: 'none',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            padding: 2,
+            color: deleteHovered ? 'var(--error)' : 'var(--text-muted)',
+            opacity: rowHovered ? 1 : 0,
+            transition: 'opacity 150ms var(--ease-out), color 150ms var(--ease-out)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+            <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }

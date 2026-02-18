@@ -4,6 +4,8 @@ import { generateSeedPhrase, hashSeedPhrase } from '../features/auth/seedPhrase'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
 
+const HEX_64 = /^[0-9a-f]{64}$/i
+
 export default function LandingPage() {
   const navigate = useNavigate()
   const [phrase, setPhrase] = useState('')
@@ -27,7 +29,14 @@ export default function LandingPage() {
   }
 
   const handleAccessVault = async () => {
-    if (!phrase.trim()) return
+    const input = phrase.trim()
+    if (!input) return
+
+    // Detect share key (64-char hex) vs seed phrase
+    if (HEX_64.test(input)) {
+      navigate(`/shared/${input}`)
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -106,11 +115,11 @@ export default function LandingPage() {
         >
           {/* Textarea */}
           <div className="space-y-2">
-            <label className="label-sm block">Seed Phrase</label>
+            <label className="label-sm block">Seed Phrase or Share Key</label>
             <textarea
               value={phrase}
               onChange={e => setPhrase(e.target.value)}
-              placeholder="Enter or generate a 12-word seed phrase..."
+              placeholder="Enter a 12-word seed phrase or paste a share key..."
               className="input-field h-24 resize-none"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
@@ -154,6 +163,11 @@ export default function LandingPage() {
               </button>
             </div>
           )}
+
+          {/* Hint */}
+          <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            Seed phrase opens your vault. Share key opens read-only access.
+          </p>
 
           {/* Access Vault Button */}
           <button

@@ -1,6 +1,6 @@
 {
-  "name": "asset.cafe",
-  "short_name": "asset.cafe",
+  "name": "warket",
+  "short_name": "warket",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -13,7 +13,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#08090d",
-  "background_color": "#08090d",
+  "theme_color": "#2a9d8f",
+  "background_color": "#0a0b10",
   "display": "standalone"
 }
