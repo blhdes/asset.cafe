@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { generateSeedPhrase, hashSeedPhrase } from '../features/auth/seedPhrase'
+import { getSupabase } from '../lib/supabase'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
+import MarketPulse from '../components/MarketPulse'
 
 const HEX_64 = /^[0-9a-f]{64}$/i
+const LS_VAULT_KEY = 'vault_hash_persistent'
+const LS_REMEMBER_KEY = 'vault_remember'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -13,11 +17,23 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [inputError, setInputError] = useState('')
+  const [remember, setRemember] = useState(() => localStorage.getItem(LS_REMEMBER_KEY) === '1')
+
+  // Auto-resume saved session
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_VAULT_KEY)
+    if (saved) {
+      sessionStorage.setItem('vault_hash', saved)
+      navigate(`/vault/${saved}`, { replace: true })
+    }
+  }, [navigate])
 
   const handleGeneratePhrase = () => {
     const newPhrase = generateSeedPhrase()
     setPhrase(newPhrase)
     setHash('')
+    setInputError('')
     setShowWarning(true)
     setCopied(false)
   }
@@ -32,17 +48,53 @@ export default function LandingPage() {
     const input = phrase.trim()
     if (!input) return
 
-    // Detect share key (64-char hex) vs seed phrase
+    setInputError('')
+
+    // Detect share key (64-char hex) — verify it exists in vault_shares
     if (HEX_64.test(input)) {
-      navigate(`/shared/${input}`)
+      setIsLoading(true)
+      try {
+        const { data, error } = await getSupabase()
+          .from('vault_shares')
+          .select('vault_hash')
+          .eq('share_hash', input)
+          .single()
+
+        if (error || !data) {
+          setInputError('Share key not found. Only existing share keys are accepted.')
+          return
+        }
+        navigate(`/shared/${input}`)
+      } catch {
+        setInputError('Failed to verify share key. Please try again.')
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // Validate 12-word seed phrase
+    const words = input.split(/\s+/).filter(Boolean)
+    if (words.length !== 12) {
+      setInputError('Enter a 12-word seed phrase or a 64-character share key.')
       return
     }
 
     setIsLoading(true)
     try {
-      const vaultHash = await hashSeedPhrase(phrase)
+      const vaultHash = await hashSeedPhrase(input)
       setHash(vaultHash)
       sessionStorage.setItem('vault_hash', vaultHash)
+
+      // Persist session if "Remember me" is checked
+      if (remember) {
+        localStorage.setItem(LS_VAULT_KEY, vaultHash)
+        localStorage.setItem(LS_REMEMBER_KEY, '1')
+      } else {
+        localStorage.removeItem(LS_VAULT_KEY)
+        localStorage.removeItem(LS_REMEMBER_KEY)
+      }
+
       navigate(`/vault/${vaultHash}`)
     } finally {
       setIsLoading(false)
@@ -69,6 +121,9 @@ export default function LandingPage() {
             'radial-gradient(ellipse at 30% 20%, var(--accent-subtle) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, var(--accent-subtle) 0%, transparent 60%)',
         }}
       />
+
+      {/* Market pulse canvas */}
+      <MarketPulse opacity={0.45} />
 
       {/* Subtle grid pattern overlay */}
       <div
@@ -118,11 +173,14 @@ export default function LandingPage() {
             <label className="label-sm block">Seed Phrase or Share Key</label>
             <textarea
               value={phrase}
-              onChange={e => setPhrase(e.target.value)}
+              onChange={e => { setPhrase(e.target.value); setInputError('') }}
               placeholder="Enter a 12-word seed phrase or paste a share key..."
               className="input-field h-24 resize-none"
               style={{ fontFamily: 'var(--font-mono)' }}
             />
+            {inputError && (
+              <p style={{ color: 'var(--error)', fontSize: '0.75rem' }}>{inputError}</p>
+            )}
           </div>
 
           {/* Generate Button */}
@@ -164,6 +222,20 @@ export default function LandingPage() {
             </div>
           )}
 
+          {/* Remember me */}
+          <label
+            className="flex items-center gap-2 cursor-pointer select-none"
+            style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}
+          >
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={e => setRemember(e.target.checked)}
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            Keep session open
+          </label>
+
           {/* Hint */}
           <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textAlign: 'center' }}>
             Seed phrase opens your vault. Share key opens read-only access.
@@ -176,7 +248,7 @@ export default function LandingPage() {
             className="btn-primary w-full"
             style={{ padding: '12px 16px', fontSize: '0.9375rem' }}
           >
-            {isLoading ? 'Hashing...' : 'Access Vault'}
+            {isLoading ? 'Verifying...' : 'Access Vault'}
           </button>
 
           {/* Hash Preview */}
