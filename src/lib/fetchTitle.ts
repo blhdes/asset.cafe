@@ -1,33 +1,87 @@
 /**
- * Fetch a page title by racing multiple sources in parallel.
- * The first source that returns a valid title wins; the rest are aborted.
+ * Fetch a page title by racing multiple strategies in parallel.
+ * First source that returns a valid title wins; the rest are aborted.
  *
- * Sources (all fire simultaneously):
- *  1. jsonlink.io  — metadata-extraction API, returns structured JSON
- *  2. allorigins.win — CORS proxy, returns raw HTML we parse ourselves
- *  3. Direct fetch  — works for the few CORS-permissive sites
+ * Strategies (all fire simultaneously):
+ *  1. jsonlink.io   — metadata extraction API (structured JSON)
+ *  2. allorigins.win — CORS proxy (raw HTML)
+ *  3. corsproxy.io   — CORS proxy (raw HTML)
+ *  4. Direct fetch   — works for CORS-permissive sites
+ *
+ * The HTML parser handles real-world markup:
+ *  - og:title, twitter:title, name="title" meta tags
+ *  - Attributes in any order (content before/after property)
+ *  - Multi-line <title> tags
+ *  - Single and double quotes, unquoted attributes
  */
 
 // ── helpers ────────────────────────────────────────────────
 
-/** Decode HTML entities (&amp; &#39; etc.) using the browser's parser. */
+/** Decode HTML entities (&amp; &#39; &#x27; etc.) using the browser. */
 function decodeEntities(text: string): string {
   const el = document.createElement('textarea')
   el.innerHTML = text
   return el.value
 }
 
-/** Extract the best available title from raw HTML. */
-function extractTitle(html: string): string | null {
-  const og = html.match(
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i,
-  )
-  if (og?.[1]) return decodeEntities(og[1].trim())
+/**
+ * Extract a meta tag's content by property or name.
+ * Handles attributes in any order and various quoting styles.
+ */
+function extractMeta(html: string, attr: 'property' | 'name', value: string): string | null {
+  // Build a pattern that matches the meta tag with attributes in either order:
+  //   <meta property="og:title" content="...">
+  //   <meta content="..." property="og:title">
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-  if (title?.[1]) return decodeEntities(title[1].trim())
+  // Pattern 1: attr before content
+  const p1 = new RegExp(
+    `<meta\\s+[^>]*?${attr}\\s*=\\s*["']${escaped}["'][^>]*?content\\s*=\\s*["']([^"']+)["']`,
+    'i',
+  )
+  const m1 = html.match(p1)
+  if (m1?.[1]) return decodeEntities(m1[1].trim())
+
+  // Pattern 2: content before attr
+  const p2 = new RegExp(
+    `<meta\\s+[^>]*?content\\s*=\\s*["']([^"']+)["'][^>]*?${attr}\\s*=\\s*["']${escaped}["']`,
+    'i',
+  )
+  const m2 = html.match(p2)
+  if (m2?.[1]) return decodeEntities(m2[1].trim())
 
   return null
+}
+
+/** Extract the best available title from raw HTML. */
+function extractTitle(html: string): string | null {
+  // 1. Open Graph title (most reliable for social/link previews)
+  const og = extractMeta(html, 'property', 'og:title')
+  if (og) return og
+
+  // 2. Twitter card title
+  const twitter = extractMeta(html, 'name', 'twitter:title')
+  if (twitter) return twitter
+
+  // 3. Generic meta name="title"
+  const metaTitle = extractMeta(html, 'name', 'title')
+  if (metaTitle) return metaTitle
+
+  // 4. <title> tag — handle multi-line content and whitespace
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+  if (titleMatch?.[1]) {
+    const cleaned = decodeEntities(titleMatch[1].replace(/\s+/g, ' ').trim())
+    if (cleaned) return cleaned
+  }
+
+  return null
+}
+
+/** Clean up a title — remove common junk suffixes, excessive whitespace. */
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 // ── individual strategies (each rejects on failure) ────────
@@ -37,9 +91,9 @@ async function tryJsonLink(url: string, signal: AbortSignal): Promise<string> {
   const res = await fetch(endpoint, { signal })
   if (!res.ok) throw new Error('jsonlink: bad status')
   const data = await res.json()
-  const t = data.title?.trim()
+  const t = (data.title as string)?.trim()
   if (!t) throw new Error('jsonlink: no title')
-  return t
+  return cleanTitle(t)
 }
 
 async function tryAllOrigins(url: string, signal: AbortSignal): Promise<string> {
@@ -48,8 +102,18 @@ async function tryAllOrigins(url: string, signal: AbortSignal): Promise<string> 
   if (!res.ok) throw new Error('allorigins: bad status')
   const html = await res.text()
   const t = extractTitle(html)
-  if (!t) throw new Error('allorigins: no title')
-  return t
+  if (!t) throw new Error('allorigins: no title in HTML')
+  return cleanTitle(t)
+}
+
+async function tryCorsProxy(url: string, signal: AbortSignal): Promise<string> {
+  const endpoint = `https://corsproxy.io/?${encodeURIComponent(url)}`
+  const res = await fetch(endpoint, { signal })
+  if (!res.ok) throw new Error('corsproxy: bad status')
+  const html = await res.text()
+  const t = extractTitle(html)
+  if (!t) throw new Error('corsproxy: no title in HTML')
+  return cleanTitle(t)
 }
 
 async function tryDirect(url: string, signal: AbortSignal): Promise<string> {
@@ -61,8 +125,8 @@ async function tryDirect(url: string, signal: AbortSignal): Promise<string> {
   if (!res.ok) throw new Error('direct: bad status')
   const html = await res.text()
   const t = extractTitle(html)
-  if (!t) throw new Error('direct: no title')
-  return t
+  if (!t) throw new Error('direct: no title in HTML')
+  return cleanTitle(t)
 }
 
 // ── public API ─────────────────────────────────────────────
@@ -72,9 +136,8 @@ export async function fetchPageTitle(
   parentSignal?: AbortSignal,
 ): Promise<string | null> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
+  const timeout = setTimeout(() => controller.abort(), 8000)
 
-  // Forward parent abort
   const onAbort = () => controller.abort()
   parentSignal?.addEventListener('abort', onAbort)
 
@@ -84,12 +147,13 @@ export async function fetchPageTitle(
     const title = await Promise.any([
       tryJsonLink(url, s),
       tryAllOrigins(url, s),
+      tryCorsProxy(url, s),
       tryDirect(url, s),
     ])
-    controller.abort()   // cancel the remaining in-flight requests
+    controller.abort() // cancel remaining in-flight requests
     return title
   } catch {
-    return null           // all three failed
+    return null // all strategies failed
   } finally {
     clearTimeout(timeout)
     parentSignal?.removeEventListener('abort', onAbort)

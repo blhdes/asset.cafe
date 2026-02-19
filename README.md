@@ -14,6 +14,7 @@ warket is a privacy-first web application for managing curated lists of financia
 - **Zero backend storage of credentials**: The seed phrase is hashed client-side and never transmitted. Your vault hash is your database ID.
 - **Supabase multi-tenancy**: Each vault is an isolated partition in a shared Supabase database.
 - **Read-only shared vaults**: Generate a cryptographic share key from your vault hash to give anyone read-only access — no seed phrase exposed. Viewers can browse and export, but cannot create, edit, or delete.
+- **Session persistence**: "Keep session open" checkbox on the landing page saves your vault hash in `localStorage` so you stay logged in across tabs and browser restarts. Clicking "Lock" clears it.
 - **Import/Export**: Export your vault as JSON (all lists or selective). Import with auto-positioning and same-name list merging.
 - **Asset management**: Organize assets into lists, add logos, descriptions (markdown), tags, and resource links.
 - **Smart search**: Search lists by name, or by asset names and tickers within lists.
@@ -51,7 +52,7 @@ On the landing page, users can:
 - Paste an existing seed phrase to access their vault
 - Paste a 64-character share key to open a read-only shared vault
 
-The app auto-detects the input type: a 64-character hex string is treated as a share key, anything else is hashed as a seed phrase.
+The app auto-detects the input type: a 64-character hex string is verified against the `vault_shares` table before navigating — invalid or non-existent share keys are rejected with an error. Anything else is validated as a 12-word seed phrase.
 
 The seed phrase is hashed client-side using **SHA-256** (via Web Crypto API) to produce a 256-bit vault hash. This hash becomes the `vault_hash` partition key in the database.
 
@@ -61,7 +62,7 @@ The seed phrase is hashed client-side using **SHA-256** (via Web Crypto API) to 
 
 Each vault is isolated via Row-Level Security (RLS) policies in Supabase. All queries filter by `vault_hash`.
 
-The vault hash is stored in `sessionStorage` for the session duration. Clicking "Lock" clears it and returns to the landing page.
+The vault hash is stored in `sessionStorage` for the session duration. If "Keep session open" is checked, the hash is also saved to `localStorage` for persistence across tabs and browser restarts. Clicking "Lock" clears both stores and returns to the landing page.
 
 ### 3. Read-Only Shared Vaults
 
@@ -212,6 +213,7 @@ warket/
 ├── src/
 │   ├── components/
 │   │   ├── ExportModal.tsx      # Selective list export (checkboxes + select all)
+│   │   ├── MarketPulse.tsx     # Animated market-movement canvas (landing page bg)
 │   │   ├── Logo.tsx             # W ascending breakout as React component
 │   │   ├── MarkdownEditor.tsx   # Custom markdown toolbar + textarea
 │   │   ├── Modal.tsx            # Shared modal (portal + swipe)
@@ -233,6 +235,7 @@ warket/
 │   │       └── ListsView.tsx    # List grid, DnD, search, tag filter, readOnly
 │   ├── lib/
 │   │   ├── favicon.ts           # Google favicon proxy
+│   │   ├── fetchTitle.ts       # URL title fetcher (multi-strategy CORS proxy racing)
 │   │   ├── position.ts          # Batch position update helper (DnD)
 │   │   ├── supabase.ts          # Supabase client factory
 │   │   ├── types.ts             # TypeScript types
@@ -371,9 +374,13 @@ Click any asset card to expand it. You'll see:
 ### Locking Your Vault
 
 Click the **Lock** button (top-right) to:
-- Clear the vault hash from `sessionStorage`
+- Clear the vault hash from both `sessionStorage` and `localStorage`
 - Return to the landing page
 - Require re-entering the seed phrase to access the vault again
+
+### Keeping Your Session Open
+
+Check the **"Keep session open"** checkbox on the landing page before accessing your vault. This saves your vault hash in `localStorage`, so you'll be automatically redirected to your vault when you revisit the app — even after closing the browser. Clicking "Lock" ends the persistent session.
 
 ---
 

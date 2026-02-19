@@ -17,7 +17,7 @@ export default function VaultPage() {
   const [listKey, setListKey] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const storedHash = sessionStorage.getItem('vault_hash')
+  const storedHash = sessionStorage.getItem('vault_hash') || localStorage.getItem('vault_hash_persistent')
 
   const handleCopyHash = () => {
     navigator.clipboard.writeText(hash!)
@@ -47,6 +47,8 @@ export default function VaultPage() {
 
   const handleLock = () => {
     sessionStorage.removeItem('vault_hash')
+    localStorage.removeItem('vault_hash_persistent')
+    localStorage.removeItem('vault_remember')
     navigate('/', { replace: true })
   }
 
