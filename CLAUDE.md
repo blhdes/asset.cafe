@@ -90,6 +90,10 @@ Supabase PostgreSQL with RLS. Schema defined in `supabase/schema.sql`:
 - Only comment complex or non-obvious logic — skip comments for standard React/Vite patterns, JSX structure, and self-evident operations
 - Avoid verbose comments that restate what the code already clearly expresses
 
+## Always Reference
+
+Before implementing any new feature, read `src/lib/types.ts` and verify that your implementation is compatible with the existing `Resource`, `VaultList`, and `Asset` interfaces. Do not introduce new data shapes that duplicate or conflict with these types.
+
 ## Core References
 
 Read these first when refactoring any data logic:
