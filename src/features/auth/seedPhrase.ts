@@ -22,6 +22,11 @@ export async function hashSeedPhrase(phrase: string): Promise<string> {
     .trim()
     .replace(/\s+/g, ' ')
 
+  const wordCount = normalized === '' ? 0 : normalized.split(' ').length
+  if (wordCount !== 12) {
+    throw new Error(`Seed phrase must be exactly 12 words, got ${wordCount}`)
+  }
+
   const encoder = new TextEncoder()
   const data = encoder.encode(normalized)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
