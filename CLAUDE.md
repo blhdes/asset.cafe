@@ -21,6 +21,9 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+### Setup & Hooks
+* **Initialization:** To initialize Claude's local settings and security hooks for a new environment, run `npm run init-claude`.
+
 ## Architecture
 
 **warket** is a privacy-first asset watchlist app. Core concept: a 12-word BIP39 seed phrase is SHA-256 hashed client-side to produce a `vault_hash`, which is the sole identity token. No accounts, no emails — just the hash.

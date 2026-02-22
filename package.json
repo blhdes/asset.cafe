@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "init-claude": "node scripts/init-claude.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
