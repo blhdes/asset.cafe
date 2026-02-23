@@ -3,10 +3,12 @@
  * First source that returns a valid title wins; the rest are aborted.
  *
  * Strategies (all fire simultaneously):
- *  1. jsonlink.io   — metadata extraction API (structured JSON)
- *  2. allorigins.win — CORS proxy (raw HTML)
- *  3. corsproxy.io   — CORS proxy (raw HTML)
- *  4. Direct fetch   — works for CORS-permissive sites
+ *  1. microlink.io  — headless-browser metadata API (handles JS-rendered pages)
+ *  2. jsonlink.io   — metadata extraction API (structured JSON)
+ *  3. allorigins.win — CORS proxy (raw HTML)
+ *  4. corsproxy.io   — CORS proxy (raw HTML)
+ *  5. codetabs.com  — CORS proxy (raw HTML)
+ *  6. Direct fetch   — works for CORS-permissive sites
  *
  * The HTML parser handles real-world markup:
  *  - og:title, twitter:title, name="title" meta tags
@@ -86,6 +88,19 @@ function cleanTitle(raw: string): string {
 
 // ── individual strategies (each rejects on failure) ────────
 
+// microlink.io renders pages with a headless browser, making it the most
+// capable strategy for JS-heavy SPAs and social media sites.
+async function tryMicrolink(url: string, signal: AbortSignal): Promise<string> {
+  const endpoint = `https://api.microlink.io?url=${encodeURIComponent(url)}`
+  const res = await fetch(endpoint, { signal })
+  if (!res.ok) throw new Error('microlink: bad status')
+  const data = await res.json()
+  if (data.status !== 'success') throw new Error('microlink: non-success status')
+  const t = (data.data?.title as string)?.trim()
+  if (!t) throw new Error('microlink: no title')
+  return cleanTitle(t)
+}
+
 async function tryJsonLink(url: string, signal: AbortSignal): Promise<string> {
   const endpoint = `https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`
   const res = await fetch(endpoint, { signal })
@@ -113,6 +128,16 @@ async function tryCorsProxy(url: string, signal: AbortSignal): Promise<string> {
   const html = await res.text()
   const t = extractTitle(html)
   if (!t) throw new Error('corsproxy: no title in HTML')
+  return cleanTitle(t)
+}
+
+async function tryCodeTabs(url: string, signal: AbortSignal): Promise<string> {
+  const endpoint = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+  const res = await fetch(endpoint, { signal })
+  if (!res.ok) throw new Error('codetabs: bad status')
+  const html = await res.text()
+  const t = extractTitle(html)
+  if (!t) throw new Error('codetabs: no title in HTML')
   return cleanTitle(t)
 }
 
@@ -145,9 +170,11 @@ export async function fetchPageTitle(
 
   try {
     const title = await Promise.any([
+      tryMicrolink(url, s),
       tryJsonLink(url, s),
       tryAllOrigins(url, s),
       tryCorsProxy(url, s),
+      tryCodeTabs(url, s),
       tryDirect(url, s),
     ])
     controller.abort() // cancel remaining in-flight requests
