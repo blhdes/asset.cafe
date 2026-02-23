@@ -5,6 +5,7 @@ import { getSupabase } from '../lib/supabase'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
 import MarketPulse from '../components/MarketPulse'
+import { useTheme } from '../contexts/ThemeContext'
 
 const HEX_64 = /^[0-9a-f]{64}$/i
 const LS_VAULT_KEY = 'vault_hash_persistent'
@@ -12,6 +13,7 @@ const LS_REMEMBER_KEY = 'vault_remember'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const { isDark } = useTheme()
   const [phrase, setPhrase] = useState('')
   const [hash, setHash] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -123,7 +125,7 @@ export default function LandingPage() {
       />
 
       {/* Market pulse canvas */}
-      <MarketPulse opacity={0.45} />
+      <MarketPulse opacity={isDark ? 0.45 : 0.65} />
 
       {/* Subtle grid pattern overlay */}
       <div

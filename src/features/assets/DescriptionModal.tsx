@@ -218,7 +218,7 @@ export default function DescriptionModal({ open, onClose, asset, db, onUpdate, r
           background: 'var(--surface-1)',
           border: '1px solid var(--border-hover)',
           borderRadius: '16px 16px 0 0',
-          height: '90vh',
+          maxHeight: '90vh',
           maxWidth: '56rem',
         }}
       >

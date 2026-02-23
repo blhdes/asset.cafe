@@ -199,7 +199,11 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
         {/* Drag handle — visual indicator only (desktop); listeners are on the wrapper */}
         {showDragHandle && (
           <div
-            className="drag-handle absolute left-1 top-1/2 -translate-y-1/2 p-1 opacity-0 transition-opacity group-hover:opacity-100 hidden sm:flex"
+            className={`drag-handle absolute left-1 top-1/2 -translate-y-1/2 p-1 hidden sm:flex transition-opacity ${
+              expanded ? '' : 'opacity-0 group-hover:opacity-100'
+            }`}
+            style={expanded ? { opacity: 0.3, cursor: 'not-allowed' } : undefined}
+            title={expanded ? 'Collapse card to reorder' : undefined}
           >
             <GripIcon />
           </div>
@@ -281,7 +285,11 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
 
         {/* Favicon stack (desktop) */}
         {resources.length > 0 && (
-          <div className="hidden sm:flex favicon-stack" style={{ alignItems: 'center' }}>
+          <div
+            className="hidden sm:flex favicon-stack"
+            style={{ alignItems: 'center' }}
+            title={`${resources.length} resource${resources.length !== 1 ? 's' : ''} saved`}
+          >
             {displayFavicons.map((resource, i) => (
               <img
                 key={`fav-${resource.url}-${i}`}
@@ -413,9 +421,13 @@ export default function AssetCard({ asset, db, onUpdate, onDelete, showDragHandl
                 <button
                   onClick={() => setDescModalOpen(true)}
                   className="btn-ghost"
-                  style={{ fontSize: '0.75rem' }}
+                  style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
-                  {asset.description ? (readOnly ? 'View' : 'View / Edit') : '+ Add Description'}
+                  {asset.description ? (readOnly ? 'View' : 'Open') : '+ Add Description'}
+                  {/* Expand icon signals this opens a modal, unlike Summary which edits inline */}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" style={{ width: 11, height: 11, flexShrink: 0 }}>
+                    <path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0V3.56l-4.97 4.97a.75.75 0 0 1-1.06-1.06l4.97-4.97H10.6a.75.75 0 0 1-.75-.75Z" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -622,6 +634,7 @@ function DeleteTextButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      title="Delete this asset"
       style={{
         background: hovered ? 'var(--error-bg)' : 'transparent',
         border: 'none',
@@ -881,52 +894,55 @@ function ResourceRow({ resource, onRemove, showDragHandle, readOnly }: { resourc
         </div>
       )}
 
-      {/* Favicon */}
-      {!faviconError ? (
-        <img
-          src={googleFavicon || resource.favicon}
-          alt=""
-          className="h-4 w-4 shrink-0"
-          style={{ borderRadius: 'var(--radius-sm)' }}
-          onError={() => setFaviconError(true)}
-        />
-      ) : (
-        <DefaultFavicon
-          className="h-4 w-4 shrink-0"
-          style={{ color: 'var(--text-muted)' }}
-        />
-      )}
-
-      {/* Title + link */}
+      {/* Favicon + title + arrow — one unified link target */}
       <a
         href={resource.url}
         target="_blank"
         rel="noopener noreferrer"
         onMouseEnter={() => setLinkHovered(true)}
         onMouseLeave={() => setLinkHovered(false)}
-        className="min-w-0 flex-1 truncate"
-        style={{
-          fontSize: '0.875rem',
-          color: linkHovered ? 'var(--accent)' : 'var(--text-secondary)',
-          transition: 'color 150ms var(--ease-out)',
-          textDecoration: 'none',
-        }}
+        className="flex min-w-0 flex-1 items-center gap-2"
+        style={{ textDecoration: 'none' }}
       >
-        {resource.title}
+        {!faviconError ? (
+          <img
+            src={googleFavicon || resource.favicon}
+            alt=""
+            className="h-4 w-4 shrink-0"
+            style={{ borderRadius: 'var(--radius-sm)' }}
+            onError={() => setFaviconError(true)}
+          />
+        ) : (
+          <DefaultFavicon
+            className="h-4 w-4 shrink-0"
+            style={{ color: 'var(--text-muted)' }}
+          />
+        )}
+        <span
+          className="min-w-0 flex-1 truncate"
+          style={{
+            fontSize: '0.875rem',
+            color: linkHovered ? 'var(--accent)' : 'var(--text-secondary)',
+            transition: 'color 150ms var(--ease-out)',
+          }}
+        >
+          {resource.title}
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className="h-3 w-3 shrink-0"
+          style={{
+            color: linkHovered ? 'var(--accent)' : 'var(--text-muted)',
+            transition: 'color 150ms var(--ease-out)',
+          }}
+        >
+          <path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z" />
+        </svg>
       </a>
 
-      {/* External link icon */}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        className="h-3 w-3 shrink-0"
-        style={{ color: 'var(--text-muted)' }}
-      >
-        <path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z" />
-      </svg>
-
-      {/* Delete button */}
+      {/* Remove button — outside the link, separated by a visible gap */}
       {!readOnly && (
         <button
           onClick={e => { e.preventDefault(); onRemove() }}
@@ -935,13 +951,14 @@ function ResourceRow({ resource, onRemove, showDragHandle, readOnly }: { resourc
           className="shrink-0"
           title="Remove resource"
           style={{
-            background: 'none',
+            background: deleteHovered ? 'var(--error-bg)' : 'none',
             border: 'none',
             borderRadius: 'var(--radius-sm)',
-            padding: 2,
+            padding: '3px 4px',
+            marginLeft: 2,
             color: deleteHovered ? 'var(--error)' : 'var(--text-muted)',
             opacity: rowHovered ? 1 : 0,
-            transition: 'opacity 150ms var(--ease-out), color 150ms var(--ease-out)',
+            transition: 'opacity 150ms var(--ease-out), color 150ms var(--ease-out), background-color 150ms var(--ease-out)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
