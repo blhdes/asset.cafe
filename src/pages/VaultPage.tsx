@@ -64,15 +64,20 @@ export default function VaultPage() {
 
   const handleShare = async () => {
     try {
-      const shareHash = await deriveShareHash(hash)
-      const supabase = getSupabase()
-      const { error } = await supabase
-        .from('vault_shares')
-        .upsert({ vault_hash: hash, share_hash: shareHash }, { onConflict: 'vault_hash' })
+      // Clipboard write must be initiated within the user gesture. Awaiting async
+      // work first loses that context, so we pass ClipboardItem a Promise that
+      // resolves the content after the Supabase upsert completes.
+      const clipContent: Promise<Blob> = (async () => {
+        const shareHash = await deriveShareHash(hash)
+        const supabase = getSupabase()
+        const { error } = await supabase
+          .from('vault_shares')
+          .upsert({ vault_hash: hash, share_hash: shareHash }, { onConflict: 'vault_hash' })
+        if (error) throw new Error(error.message)
+        return new Blob([shareHash], { type: 'text/plain' })
+      })()
 
-      if (error) { toast(error.message); return }
-
-      await navigator.clipboard.writeText(shareHash)
+      await navigator.clipboard.write([new ClipboardItem({ 'text/plain': clipContent })])
       toast('Share key copied to clipboard', 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Failed to generate share key')
