@@ -247,12 +247,16 @@ warket/
 │   ├── index.css                # Full design system + dual-theme tokens + animations
 │   └── main.tsx
 ├── supabase/
-│   └── migrations/
-│       ├── 00001_create_tables.sql
-│       ├── 00002_rename_articles_to_resources.sql
-│       └── 00003_create_vault_shares.sql
-├── supabase-migration-image-url.sql
-├── supabase-migration-position.sql
+│   └── schema.sql               # Full schema — tables, RLS policies, helper functions
+├── src/test/
+│   ├── fetchTitle.test.ts
+│   ├── fetchTitle.integration.test.ts
+│   ├── position.test.ts
+│   ├── seedPhrase.test.ts
+│   ├── vaultExport.test.ts
+│   ├── fixtures.ts
+│   ├── mockSupabase.ts
+│   └── setup.ts
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -276,22 +280,13 @@ npm install
 
 ### 2. Supabase Setup
 
-Create a Supabase project, then run the migration files in order in the **SQL Editor**:
+Create a Supabase project, then run the full schema in the **SQL Editor**:
 
 ```bash
-# 1. Core tables
-supabase/migrations/00001_create_tables.sql
-
-# 2. Rename articles to resources
-supabase/migrations/00002_rename_articles_to_resources.sql
-
-# 3. Vault shares (for read-only sharing)
-supabase/migrations/00003_create_vault_shares.sql
-
-# 4. Additional column migrations
-supabase-migration-image-url.sql
-supabase-migration-position.sql
+supabase/schema.sql
 ```
+
+This single file creates all tables, RLS policies, and helper functions.
 
 ### 3. Environment Variables
 
@@ -308,7 +303,12 @@ npm run dev
 
 Visit `http://localhost:5173`
 
-### 5. Build for Production
+### 5. Run Tests
+```bash
+npm test         # Run unit tests (Vitest)
+```
+
+### 6. Build for Production
 ```bash
 npm run build
 npm run preview  # Preview production build
