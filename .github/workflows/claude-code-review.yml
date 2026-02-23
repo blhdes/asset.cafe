@@ -1,11 +1,22 @@
 name: Claude Code Review
 
 on:
+  # Manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull Request Number to review'
+        required: true
+        type: string
+  
+  # Trigger only when a specific label is added to the PR
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [labeled]
 
 jobs:
   claude-review:
+    # Execute ONLY if triggered manually or if the label is exactly 'ai-review'
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'ai-review' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,7 +49,6 @@ jobs:
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: >
-            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number || github.event.inputs.pr_number }}
             
             SECURITY CRITICAL: The seed phrase must never be transmitted or logged. Flag and reject any PR that violates this. Adhere strictly to our CLAUDE.md standards.
-

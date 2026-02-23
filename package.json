@@ -26,6 +26,7 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.50",
     "@eslint/js": "^9.39.1",
     "@js-temporal/polyfill": "^0.5.1",
     "@testing-library/jest-dom": "^6.9.1",
