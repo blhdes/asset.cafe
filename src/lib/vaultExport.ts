@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { VaultList, Asset, Resource } from './types'
+import { fetchListsByVault, fetchAssetsForList } from './queries'
 
 /* ── Export format ──────────────────────────────────────────── */
 
@@ -29,28 +30,14 @@ interface VaultExport {
 /* ── Export ──────────────────────────────────────────────────── */
 
 export async function exportVault(db: SupabaseClient, vaultHash: string, listIds?: string[]) {
-  let query = db
-    .from('lists')
-    .select('*')
-    .eq('vault_hash', vaultHash)
-    .order('position', { ascending: true })
-
-  if (listIds && listIds.length > 0) {
-    query = query.in('id', listIds)
-  }
-
-  const { data: lists, error: listErr } = await query
+  const { data: lists, error: listErr } = await fetchListsByVault(db, vaultHash, listIds?.length ? listIds : undefined)
 
   if (listErr) throw new Error(listErr.message)
 
   const exportedLists: ExportedList[] = []
 
   for (const list of (lists ?? []) as VaultList[]) {
-    const { data: assets, error: assetErr } = await db
-      .from('assets')
-      .select('*')
-      .eq('list_id', list.id)
-      .order('position', { ascending: true })
+    const { data: assets, error: assetErr } = await fetchAssetsForList(db, list.id)
 
     if (assetErr) throw new Error(assetErr.message)
 

@@ -58,6 +58,7 @@ Code is organized by feature under `src/features/`:
 |------|------|
 | `src/lib/supabase.ts` | Creates vault-scoped Supabase client with `x-vault-hash` header |
 | `src/lib/types.ts` | Shared TypeScript interfaces (`Resource`, `VaultList`, `Asset`) |
+| `src/lib/queries.ts` | Shared Supabase query functions (`resolveShareKey`, `fetchAssetsForList`, `fetchListsByVault`) |
 | `src/lib/vaultExport.ts` | JSON export/import with selective list support |
 | `src/lib/fetchTitle.ts` | URL title fetching (races multiple CORS proxies) |
 | `src/lib/position.ts` | Batch position update for drag-and-drop reordering |
@@ -104,6 +105,7 @@ Read these first when refactoring any data logic:
 | File | Purpose |
 |------|---------|
 | `src/lib/types.ts` | Central TypeScript interfaces — `Resource`, `VaultList`, `Asset` |
+| `src/lib/queries.ts` | Shared query functions — use these before writing inline Supabase queries |
 | `supabase/schema.sql` | Full database schema — tables, columns, RLS policies, helper functions |
 
 ### Drag & Drop

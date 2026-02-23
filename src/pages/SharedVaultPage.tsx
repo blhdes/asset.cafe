@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router'
 import { getSupabase, vaultClient } from '../lib/supabase'
+import { resolveShareKey } from '../lib/queries'
 import ToastContainer from '../components/Toast'
 import ListsView from '../features/lists/ListsView'
 import ExportModal from '../components/ExportModal'
@@ -20,12 +21,7 @@ export default function SharedVaultPage() {
 
     const resolve = async () => {
       try {
-        const supabase = getSupabase()
-        const { data, error: fetchError } = await supabase
-          .from('vault_shares')
-          .select('vault_hash')
-          .eq('share_hash', shareHash)
-          .single()
+        const { data, error: fetchError } = await resolveShareKey(getSupabase(), shareHash)
 
         if (fetchError || !data) {
           setError('Invalid or expired share key.')

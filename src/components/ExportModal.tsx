@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { VaultList } from '../lib/types'
 import { exportVault } from '../lib/vaultExport'
+import { fetchListsByVault } from '../lib/queries'
 import Modal from './Modal'
 import { toast } from './Toast'
 
@@ -23,11 +24,7 @@ export default function ExportModal({ open, onClose, db, vaultHash }: Props) {
     setLoading(true)
 
     const fetchLists = async () => {
-      const { data, error } = await db
-        .from('lists')
-        .select('*')
-        .eq('vault_hash', vaultHash)
-        .order('position', { ascending: true })
+      const { data, error } = await fetchListsByVault(db, vaultHash)
 
       if (error) {
         toast(error.message)

@@ -25,6 +25,7 @@ import AddAssetModal from './AddAssetModal'
 import { Skeleton } from '../../components/Skeleton'
 import { toast } from '../../components/Toast'
 import { updatePositions } from '../../lib/position'
+import { fetchAssetsForList } from '../../lib/queries'
 
 interface Props {
   list: VaultList
@@ -51,11 +52,7 @@ export default function AssetListView({ list, db, onBack, onEdit, readOnly }: Pr
 
   /* ── Fetch ─────────────────────────────────────────────── */
   const fetchAssets = useCallback(async () => {
-    const { data, error } = await db
-      .from('assets')
-      .select('*')
-      .eq('list_id', list.id)
-      .order('position', { ascending: true })
+    const { data, error } = await fetchAssetsForList(db, list.id)
 
     if (error) {
       toast(error.message)

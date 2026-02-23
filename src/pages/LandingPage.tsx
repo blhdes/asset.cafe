@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { generateSeedPhrase, hashSeedPhrase } from '../features/auth/seedPhrase'
 import { getSupabase } from '../lib/supabase'
+import { resolveShareKey } from '../lib/queries'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
 import MarketPulse from '../components/MarketPulse'
@@ -56,11 +57,7 @@ export default function LandingPage() {
     if (HEX_64.test(input)) {
       setIsLoading(true)
       try {
-        const { data, error } = await getSupabase()
-          .from('vault_shares')
-          .select('vault_hash')
-          .eq('share_hash', input)
-          .single()
+        const { data, error } = await resolveShareKey(getSupabase(), input)
 
         if (error || !data) {
           setInputError('Share key not found. Only existing share keys are accepted.')
