@@ -122,6 +122,7 @@ export default function VaultPage() {
           backgroundColor: 'var(--header-bg)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
+          paddingTop: 'env(safe-area-inset-top)',
         }}
       >
         <div className="mx-auto flex h-14 items-center justify-between px-4" style={{ maxWidth: '1400px' }}>

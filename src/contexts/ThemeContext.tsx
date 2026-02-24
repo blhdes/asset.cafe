@@ -19,10 +19,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return stored === 'light' || stored === 'dark' ? stored : DEFAULT_THEME
   })
 
-  // Apply data-theme attribute on mount and changes
+  // Apply data-theme attribute on mount and changes; sync theme-color meta for PWA
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem(STORAGE_KEY, theme)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#08090d' : '#f8f9fb')
   }, [theme])
 
   const toggleTheme = useCallback(() => {

@@ -79,6 +79,11 @@ export default function LandingPage() {
       return
     }
 
+    if (!window.isSecureContext) {
+      setInputError('A secure connection (HTTPS) is required. Open the app from your deployed URL, not a local network address.')
+      return
+    }
+
     setIsLoading(true)
     try {
       const vaultHash = await hashSeedPhrase(input)
@@ -95,6 +100,8 @@ export default function LandingPage() {
       }
 
       navigate(`/vault/${vaultHash}`)
+    } catch (e) {
+      setInputError(e instanceof Error ? e.message : 'Something went wrong. Try again.')
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +115,7 @@ export default function LandingPage() {
       style={{ backgroundColor: 'var(--surface-0)' }}
     >
       {/* Theme toggle */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute right-4 z-20" style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}>
         <ThemeToggle />
       </div>
 
