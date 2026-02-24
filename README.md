@@ -15,7 +15,8 @@ warket is a privacy-first web application for managing curated lists of financia
 - **Supabase multi-tenancy**: Each vault is an isolated partition in a shared Supabase database.
 - **Read-only shared vaults**: Generate a cryptographic share key from your vault hash to give anyone read-only access — no seed phrase exposed. Viewers can browse and export, but cannot create, edit, or delete.
 - **Session persistence**: "Keep session open" checkbox on the landing page saves your vault hash in `localStorage` so you stay logged in across tabs and browser restarts. Clicking "Lock" clears it.
-- **Import/Export**: Export your vault as JSON (all lists or selective). Import with auto-positioning and same-name list merging.
+- **Import/Export**: Export your vault as JSON with a list-selector modal (choose which lists to include). Import with auto-positioning and same-name list merging.
+- **PWA support**: Installable as a Progressive Web App. Includes offline banner on connectivity loss, native Chrome install prompt, and iOS share-sheet hint.
 - **Asset management**: Organize assets into lists, add logos, descriptions (markdown), tags, and resource links.
 - **Smart search**: Search lists by name, or by asset names and tickers within lists.
 - **Edit lists**: Rename, edit tags, or delete lists from an edit modal with confirmation flow.
@@ -39,6 +40,7 @@ warket is a privacy-first web application for managing curated lists of financia
 - **Sharing**: SHA-256 with domain separation (`:share` suffix) for one-way share key derivation
 - **Drag & Drop**: @dnd-kit (core, sortable, utilities)
 - **Markdown**: marked.js for rendering
+- **PWA**: vite-plugin-pwa (Workbox service worker, runtime caching)
 - **Icons**: Heroicons (inline SVG)
 
 ---
@@ -83,13 +85,10 @@ Vault owners can generate a **share key** — a deterministic, one-way hash deri
 ### 4. Import/Export
 
 **Export:**
-- Downloads vault data as a timestamped JSON file (`warket-export-YYYY-MM-DD.json`)
-- Includes all lists with their assets (name, ticker, tags, summary, description, resources)
+- Clicking Export opens the `ExportModal` — choose which lists to include via checkboxes (or "Select all")
+- Downloads a timestamped JSON file (`warket-export-YYYY-MM-DD.json`) with all selected lists and their assets (name, ticker, tags, summary, description, resources)
 - Position values are excluded from export — order is preserved by array sequence
-
-**Selective Export (shared vaults):**
-- In read-only mode, an `ExportModal` allows choosing which lists to export
-- Checkboxes for each list with a "Select all" toggle
+- Available in both owner and read-only (shared) modes
 
 **Import:**
 - Upload a JSON file via the import button in the vault header
@@ -212,8 +211,10 @@ warket/
 │   └── site.webmanifest
 ├── src/
 │   ├── components/
-│   │   ├── ExportModal.tsx      # Selective list export (checkboxes + select all)
-│   │   ├── MarketPulse.tsx     # Animated market-movement canvas (landing page bg)
+│   │   ├── ExportModal.tsx      # List-selector export modal (checkboxes + select all)
+│   │   ├── InstallPrompt.tsx    # PWA install prompt (Chrome native + iOS hint)
+│   │   ├── OfflineBanner.tsx    # Fixed top banner shown when network is offline
+│   │   ├── MarketPulse.tsx      # Animated market-movement canvas (landing page bg)
 │   │   ├── Logo.tsx             # W ascending breakout as React component
 │   │   ├── MarkdownEditor.tsx   # Custom markdown toolbar + textarea
 │   │   ├── Modal.tsx            # Shared modal (portal + swipe)
@@ -337,7 +338,8 @@ npm run preview  # Preview production build
 
 **Export:**
 - Click the **Export** button (down-arrow icon) in the vault header
-- A JSON file downloads with all your lists and assets
+- Choose which lists to include using the checkboxes, then click **Export**
+- A JSON file downloads with the selected lists and their assets
 
 **Import:**
 - Click the **Import** button (up-arrow icon) in the vault header
