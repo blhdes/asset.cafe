@@ -392,7 +392,8 @@ button:focus-visible {
 .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 /* Prevent iOS auto-zoom on focus (triggers below 16px) */
 @media (max-width: 768px) {
-  .input-field { font-size: 1rem; }
+  .input-field,
+  textarea { font-size: 1rem !important; }
 }
 
 .favicon-stack { display: flex; align-items: center; }
