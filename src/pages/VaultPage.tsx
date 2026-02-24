@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router'
 import { getSupabase, vaultClient } from '../lib/supabase'
 import { deriveShareHash } from '../features/auth/seedPhrase'
-import { exportVault, importVault, validateImportData } from '../lib/vaultExport'
+import { importVault, validateImportData } from '../lib/vaultExport'
 import { toast } from '../components/Toast'
 import ToastContainer from '../components/Toast'
 import ListsView from '../features/lists/ListsView'
+import ExportModal from '../components/ExportModal'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
 
@@ -15,6 +16,7 @@ export default function VaultPage() {
   const [supabaseError, setSupabaseError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [listKey, setListKey] = useState(0)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const storedHash = sessionStorage.getItem('vault_hash') || localStorage.getItem('vault_hash_persistent')
@@ -50,16 +52,6 @@ export default function VaultPage() {
     localStorage.removeItem('vault_hash_persistent')
     localStorage.removeItem('vault_remember')
     navigate('/', { replace: true })
-  }
-
-  const handleExport = async () => {
-    if (!db) return
-    try {
-      const result = await exportVault(db, hash)
-      toast(`Exported ${result.listsExported} lists, ${result.assetsExported} assets`, 'success')
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Export failed')
-    }
   }
 
   const handleShare = async () => {
@@ -192,7 +184,7 @@ export default function VaultPage() {
 
             {/* Export */}
             <button
-              onClick={handleExport}
+              onClick={() => setExportModalOpen(true)}
               className="theme-toggle"
               title="Export vault"
             >
@@ -258,6 +250,15 @@ export default function VaultPage() {
           <ListsView key={listKey} db={db} vaultHash={hash} />
         ) : null}
       </main>
+
+      {db && (
+        <ExportModal
+          open={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          db={db}
+          vaultHash={hash}
+        />
+      )}
 
       <ToastContainer />
     </div>
