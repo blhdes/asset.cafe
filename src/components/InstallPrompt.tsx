@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -18,6 +19,7 @@ export default function InstallPrompt() {
   const [showIOS, setShowIOS] = useState(false)
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) return
     if (localStorage.getItem('warket-pwa-dismissed') || isStandalone()) return
 
     if (isIOS()) {
@@ -47,7 +49,7 @@ export default function InstallPrompt() {
     else setDeferredPrompt(null)
   }
 
-  if (!deferredPrompt && !showIOS) return null
+  if (Capacitor.isNativePlatform() || (!deferredPrompt && !showIOS)) return null
 
   return (
     <div
